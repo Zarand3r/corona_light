@@ -5,23 +5,17 @@ import datetime
 from datetime import timedelta
 import git
 
-repo = git.Repo("./", search_parent_directories=True)
-homedir = repo.working_dir
-datadir = f"{homedir}/data/international/italy/covid/"
 
-# translate regional file
-dfr = pd.read_csv(datadir + "dpc-covid19-ita-regioni.csv")
-dfr.columns = ["Date","Country", "Regional Code", "Region", "Latitude","Longitude","HospitalizedWithSymptoms","IntensiveCare","TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","ChangeTotalPositive","NewCurrentlyPositive","DischargedHealed","Deaths","TotalCases","Tested","Note_IT","Note_ENG"]
-# dfr.to_csv(datadir + 'dpc-covid19-ita-regioni.csv', index=False)
+def load_data(filename, directory="/data/international/italy/covid/"):
+	repo = git.Repo("./", search_parent_directories=True)
+	homedir = repo.working_dir
+	filepath = f"{homedir}" + directory + filename
+	df = pd.read_csv(filepath)
+	return df 
 
-# translate provincial file
-dfp = pd.read_csv(datadir + "dpc-covid19-ita-province.csv")
-dfp.columns = ["Date","Country", "Regional Code", "Region", "Province Code","Province","ProvinceInitials","Latitude","Longitude","TotalCases","Note_IT","Note_ENG"]
-# dfp.to_csv(datadir + "dpc-covid19-ita-province.csv", index=False)
-
-def load_region(region):
-	region_data = dfr[dfr["Region"]==region]
-	return region_data
+def query(data, query_key, query_val):
+	query_data = data[data[query_key]==query_val]
+	return query_data
 
 def plot_features(dataframe, *features):
 	time_list = []
@@ -40,5 +34,6 @@ def plot_features(dataframe, *features):
 	plt.show()
 
 if __name__ == '__main__':
-	abruzzo = load_region("Abruzzo")
+	italy = load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
+	abruzzo = query(italy, "Region", "Abruzzo")
 	plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
