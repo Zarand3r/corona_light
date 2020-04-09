@@ -6,14 +6,16 @@ from datetime import timedelta
 import git
 
 
-def load_region(filename, query_key, query_val, directory="/data/international/italy/covid/"):
+def load_data(filename, directory="/data/international/italy/covid/"):
 	repo = git.Repo("./", search_parent_directories=True)
 	homedir = repo.working_dir
 	filepath = f"{homedir}" + directory + filename
-	print(filepath)
 	df = pd.read_csv(filepath)
-	region_data = df[df[query_key]==query_val]
-	return region_data
+	return df 
+
+def query(query_key, query_val)
+	query_data = df[df[query_key]==query_val]
+	return query_data
 
 def plot_features(dataframe, *features):
 	time_list = []
@@ -32,5 +34,6 @@ def plot_features(dataframe, *features):
 	plt.show()
 
 if __name__ == '__main__':
-	abruzzo = load_region("dpc-covid19-ita-regioni.csv", "Region", "Abruzzo", "/models/processing/International/Italy/")
+	italy = load_region("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
+	abruzzo = query("Region", "Abruzzo")
 	plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
