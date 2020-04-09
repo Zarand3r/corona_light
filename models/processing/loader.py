@@ -13,7 +13,7 @@ def load_data(filename, directory="/data/international/italy/covid/"):
 	df = pd.read_csv(filepath)
 	return df 
 
-def query(data, query_key, query_val)
+def query(data, query_key, query_val):
 	query_data = data[data[query_key]==query_val]
 	return query_data
 
@@ -34,6 +34,6 @@ def plot_features(dataframe, *features):
 	plt.show()
 
 if __name__ == '__main__':
-	italy = load_region("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
+	italy = load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
 	abruzzo = query(italy, "Region", "Abruzzo")
 	plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
