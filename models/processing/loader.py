@@ -37,3 +37,14 @@ if __name__ == '__main__':
 	italy = load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
 	abruzzo = query(italy, "Region", "Abruzzo")
 	plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
+
+
+
+# #example usage from outside file:
+# import sys
+# sys.path.insert(1, '../processing')
+# import loader
+
+# italy = loader.load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
+# abruzzo = loader.query(italy, "Region", "Abruzzo")
+# loader.plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
