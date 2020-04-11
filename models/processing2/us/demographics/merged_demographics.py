@@ -7,7 +7,7 @@ import git
 repo = git.Repo("./", search_parent_directories=True)
 homedir = repo.working_dir
 inputdir = f"{homedir}" + "/data/us/demographics/"
-outputdir = f"{homedir}" + "/models/data/us/demographics"
+outputdir = f"{homedir}" + "/models/data/us/demographics/"
 
 #Loading in County Data
 Age_Race = pd.read_csv(inputdir+'acs_2018.csv', encoding='latin1')
