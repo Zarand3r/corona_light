@@ -1,5 +1,5 @@
 import sys
-sys.path.insert(1, '../processing')
+sys.path.insert(1, '../processing2')
 import loader
 
 italy = loader.load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")

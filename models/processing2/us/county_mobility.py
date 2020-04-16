@@ -78,7 +78,7 @@ def main():
     #Taking only county data
     google_mobility_county = google_mobility[google_mobility['Region'] != 'Total']
     #Key to map counties to FIPS, and states to state abbreviations
-    Key =  pd.read_csv('county_key.csv', index_col=0).sort_values(by=['FIPS'])
+    Key =  pd.read_csv('county_key.csv').sort_values(by=['FIPS'])
     State_Abv = pd.read_csv('State_Abbrev.csv')
     State_Abv = np.array(State_Abv)
     #Dictionary from state names to state initials

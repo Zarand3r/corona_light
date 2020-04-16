@@ -96,7 +96,7 @@ def main():
 
     #Cleaning Air_Qual to split it up
     Air_Qual = Air_Qual.drop(columns=['ValidTime','OZONE_Measured','PM10_Measured','PM25_Measured','NO2_Measured','PM25', 'PM25_Unit', 'OZONE','OZONE_Unit','NO2','NO2_Unit','PM10','PM10_Unit'])
-    Air_Qual.to_csv(outputdir+'air_qual.csv')
+    # Air_Qual.to_csv(outputdir+'air_qual.csv')
 
 
     #Making individual Dataframes for each type of Gas particle collected
