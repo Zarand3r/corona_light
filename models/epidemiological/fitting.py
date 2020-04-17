@@ -1,58 +1,33 @@
-# import sys
-# sys.path.insert(1, '../processing2')
-# import loader
-
-# italy = loader.load_data("dpc-covid19-ita-regioni.csv", "/models/processing/International/Italy/")
-# abruzzo = loader.query(italy, "Region", "Abruzzo")
-# loader.plot_features(abruzzo, "TotalHospitalized","HomeIsolation","TotalCurrentlyPositive","Deaths","TotalCases")
-
-
+import itertools
 import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
-#DONT RUN THIS CELL IT IS IRRELEVANT FOR NOW
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.integrate import odeint
+import scipy.integrate
+from sklearn.metrics import mean_squared_error
+from scipy.linalg import svd
+from scipy.optimize import least_squares
+import itertools
 
-# def pecaiqr(z, t, params):
-# 	a_1 = params[0]
-# 	a_2 = params[1]
-# 	a_3 = params[2]
-# 	b_1 = params[3]
-# 	b_2 = params[4]
-# 	b_3 = params[5]
-# 	b_4 = params[6]
-# 	g_a = params[7]
-# 	g_i = params[8]
-# 	th = params[9]
-# 	del_a = params[10]
-# 	del_i = params[11]
-# 	r_a = params[12]
-# 	r_i = params[13]
-# 	r_q = params[14]
-# 	d_i = params[15]
-# 	d_q = params[16]
+import bokeh.io
+import bokeh.application
+import bokeh.application.handlers
+import bokeh.models
+import holoviews as hv
+# bokeh.io.output_notebook()
+hv.extension('bokeh')
 
+import git
+import sys
+repo = git.Repo("./", search_parent_directories=True)
+homedir = repo.working_dir
+sys.path.insert(1, f"{homedir}" + '/models/data_processing')
+import loader
 
-# 	P = z[0]
-# 	E = z[1]
-# 	C = z[2]
-# 	A = z[3]
-# 	I = z[4]
-# 	Q = z[5]
-# 	R = z[6]
-# 	N = P + E + C + A + I + Q + R
-
-# 	dPdt = (- ((a_1*a_2)*C*P)/N) + (-a_3*P + b_4*E)*(N/(P+E))
-# 	dEdt = (- ((b_1 * A + b_2 * I) * E) / N) + b_3*C + (a_3*P - b_4*E)*(N/(P+E))
-# 	dCdt = -(g_a + g_i)*C + (((b_1 * A + b_2 * I) * E) / N) - b_3*C
-# 	dAdt = (a_1 * C * P) / N + g_a*C - (r_a + del_a + th)*A
-# 	dIdt = (a_2 * C * P) / N + g_i*C - ((r_i+d_i)+del_i)*I+th*A
-# 	dQdt = del_a*A + del_i*I - (r_q+d_q)*Q
-# 	dRdt = r_a*A + (r_i+d_i)*I + (r_q+d_q)*Q
-# 	dDdt = d_i*I + d_q*Q
-
-# 	dzdt = [dPdt, dEdt, dCdt, dAdt, dIdt, dQdt, dRdt, dDdt]
-# 	return dzdt
 
 # def plot_pecaiqr():
 # 	n = 2000
@@ -86,82 +61,6 @@ import matplotlib.pyplot as plt
 # 	plt.xlabel('time')
 # 	plt.legend(loc='best')
 # 	plt.show()
-
-
-
-def pecaiqr(dat, t, params, N, max_t, offset):
-	if t >= max_t:
-		return [0]*8
-	a_1 = params[0]
-	a_2 = params[1]
-	a_3 = params[2]
-	b_1 = params[3]
-	b_2 = params[4]
-	b_3 = params[5]
-	b_4 = params[6]
-	g_a = params[7]
-	g_i = params[8]
-	th = params[9]
-	del_a = params[10]
-	del_i = params[11]
-	r_a = params[12]
-	r_i = params[13]
-	r_q = params[14]
-	d_i = params[15]
-	d_q = params[16]
-
-
-	P = dat[0]
-	E = dat[1]
-	C = dat[2]
-	A = dat[3]
-	I = dat[4]
-	Q = dat[5]
-	R = dat[6]
-	# N = P + E + C + A + I + Q + R
-
-	dPdt = (- ((a_1*a_2)*C*P)/N) + (-a_3*P + b_4*E)*(N/(P+E))
-	dEdt = (- ((b_1 * A + b_2 * I) * E) / N) + b_3*C + (a_3*P - b_4*E)*(N/(P+E))
-	dCdt = -(g_a + g_i)*C + (((b_1 * A + b_2 * I) * E) / N) - b_3*C
-	dAdt = (a_1 * C * P) / N + g_a*C - (r_a + del_a + th)*A
-	dIdt = (a_2 * C * P) / N + g_i*C - ((r_i+d_i)+del_i)*I+th*A
-	dQdt = del_a*A + del_i*I - (r_q+d_q)*Q
-	dRdt = r_a*A + (r_i+d_i)*I + (r_q+d_q)*Q
-	dDdt = d_i*I + d_q*Q
-
-	dzdt = [dPdt, dEdt, dCdt, dAdt, dIdt, dQdt, dRdt, dDdt]
-	return dzdt
-
-
-
-
-
-
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.integrate import odeint
-import scipy.integrate
-from sklearn.metrics import mean_squared_error
-from scipy.linalg import svd
-from scipy.optimize import least_squares
-import itertools
-
-import bokeh.io
-import bokeh.application
-import bokeh.application.handlers
-import bokeh.models
-import holoviews as hv
-# bokeh.io.output_notebook()
-hv.extension('bokeh')
-
-import git
-import sys
-repo = git.Repo("./", search_parent_directories=True)
-homedir = repo.working_dir
-sys.path.insert(1, f"{homedir}" + '/models/data_processing')
-import loader
-
 
 def process_data(data_covid, data_population):
 	covid = loader.load_data(data_covid)
@@ -214,6 +113,49 @@ def mse_qd(A, B):
 	Ap[A == np.inf] = 0
 	Bp[B == np.inf] = 0
 	return mean_squared_error(Ap, Bp)
+
+def pecaiqr(dat, t, params, N, max_t, offset):
+	if t >= max_t:
+		return [0]*8
+	a_1 = params[0]
+	a_2 = params[1]
+	a_3 = params[2]
+	b_1 = params[3]
+	b_2 = params[4]
+	b_3 = params[5]
+	b_4 = params[6]
+	g_a = params[7]
+	g_i = params[8]
+	th = params[9]
+	del_a = params[10]
+	del_i = params[11]
+	r_a = params[12]
+	r_i = params[13]
+	r_q = params[14]
+	d_i = params[15]
+	d_q = params[16]
+
+
+	P = dat[0]
+	E = dat[1]
+	C = dat[2]
+	A = dat[3]
+	I = dat[4]
+	Q = dat[5]
+	R = dat[6]
+	# N = P + E + C + A + I + Q + R
+
+	dPdt = (- ((a_1*a_2)*C*P)/N) + (-a_3*P + b_4*E)*(N/(P+E))
+	dEdt = (- ((b_1 * A + b_2 * I) * E) / N) + b_3*C + (a_3*P - b_4*E)*(N/(P+E))
+	dCdt = -(g_a + g_i)*C + (((b_1 * A + b_2 * I) * E) / N) - b_3*C
+	dAdt = (a_1 * C * P) / N + g_a*C - (r_a + del_a + th)*A
+	dIdt = (a_2 * C * P) / N + g_i*C - ((r_i+d_i)+del_i)*I+th*A
+	dQdt = del_a*A + del_i*I - (r_q+d_q)*Q
+	dRdt = r_a*A + (r_i+d_i)*I + (r_q+d_q)*Q
+	dDdt = d_i*I + d_q*Q
+
+	dzdt = [dPdt, dEdt, dCdt, dAdt, dIdt, dQdt, dRdt, dDdt]
+	return dzdt
 
 def model_qd(params, data, tmax=-1):
 	N = data['Population'].values[0] # total population
@@ -284,6 +226,67 @@ def plot_qd(res, p0_params, p0_initial_conditions, data, extrapolate=1, boundary
 	p.legend.location = 'top_left'
 	bokeh.io.show(p)
 
+def plot_with_errors_sample(res, p0_params, p0_initial_conditions, data, extrapolate=1, boundary=None, plot_infectious=False):
+	errors = get_errors(res, list(p0_params) + list(p0_initial_conditions))
+	errors[len(p0_params):] = 0
+	
+	all_s = []
+	samples = 100
+	for i in range(samples):
+		sample = np.random.normal(loc=res.x, scale=errors)
+		s = model_qd(sample, data, len(data)*extrapolate)
+		all_s.append(s)
+		
+	all_s = np.array(all_s)
+
+	s = model_qd(res.x, data, len(data)*extrapolate)
+	P = s[:,0]
+	E = s[:,1]
+	C = s[:,2]
+	A = s[:,3]
+	I = s[:,4]
+	Q = s[:,5]
+	R = s[:,6]
+	D = s[:,7]
+
+	t = np.arange(0, len(data))
+	tp = np.arange(0, len(data)*extrapolate)
+
+	p = bokeh.plotting.figure(plot_width=600,
+							  plot_height=400,
+							 title = ' SEIIRD+Q Model Errors',
+							 x_axis_label = 't (days)',
+							 y_axis_label = '# people')
+
+	s1 = np.percentile(all_s, 25, axis=0)
+	s2 = np.percentile(all_s, 75, axis=0)
+
+	if plot_infectious:
+		p.varea(x=tp, y1=s1[:, 2], y2=s2[:, 2], color='red', fill_alpha=0.2)
+	p.varea(x=tp, y1=s1[:, 3], y2=s2[:, 3], color='purple', fill_alpha=0.2)
+	p.varea(x=tp, y1=s1[:, 5], y2=s2[:, 5], color='black', fill_alpha=0.2)
+	
+	if plot_infectious:
+		p.line(tp, I, color = 'red', line_width = 1, legend = 'All infected')
+	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
+	p.line(tp, Q, color = 'yellow', line_width = 1, legend = 'Quarantined')
+	# p.line(tp, R, color = 'green', line_width = 1, legend = 'Recovered')
+
+	# death
+	p.circle(t, data['Deaths'], color ='black')
+
+	# quarantined
+	p.circle(t, data['TotalCurrentlyPositive'], color ='purple')
+	
+	if boundary is not None:
+		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
+		p.renderers.extend([vline])
+
+	p.legend.location = 'top_left'
+	bokeh.io.show(p)
+
+
+
 def fit_leastsq_qd(params, data):
 	Ddata = (data['Deaths'].values)
 	Idata = (data['TotalCurrentlyPositive'].values)
@@ -306,18 +309,23 @@ def main():
 	italy = process_data("/models/data/international/italy/covid/dpc-covid19-ita-regioni.csv", "/models/data/international/italy/demographics/region-populations.csv")
 	lombardia = loader.query(italy, "Region", "Lombardia")
 
+	# print(lombardia["totalcases"])
+
 	params = [0.1, 0.1, 0.1, 0.3, 0.5, 0.1, 0.1, 0.3, 0.5, 0.1, 0.1, 0.1, 0.001, 0.001, 0.001, 0.001, 0.001]
 	params[:] = [x/1  for x in params]
-	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,2),(0,2),(0,2),(0,2)]
-	initial_conditions = [0.74, 0.24, 0.005, 4e-6, 0.0009, 0.0005, 0.0002]
-	initial_ranges = [(0,1), (0,1), (0,0.3), (0,0.5), (0,0.5), (0,0.3), (0,1)]
+	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
+	# initial_conditions = [0.74, 0.24, 0.005, 4e-6, 0.0009, 0.0005, 0.0002]
+	initial_conditions = [0.74, 0.24, 0.00001, 4e-6, 0.00001, 0.00001, 0.00001]
+	initial_ranges = [(0,1), (0,1), (0,0.3), (0,0.2), (0,0.5), (0,0.3), (0,1)]
 	guesses = params + initial_conditions
 	ranges = param_ranges + initial_ranges
 
 
-	for boundary in [20, 40]:
+	for boundary in [30, 40]:
 		res = least_squares(fit_leastsq_qd, guesses, args=(lombardia[:boundary],), bounds=np.transpose(np.array(ranges)))
 		plot_qd(res, params, initial_conditions, lombardia, extrapolate=2, boundary=boundary, plot_infectious=True)
+		# plot_with_errors_sample(res, params, initial_conditions, lombardia, extrapolate=2, boundary=boundary, plot_infectious=True)
+
 
 
 if __name__ == '__main__':
