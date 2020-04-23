@@ -392,88 +392,57 @@ def fit(data, weight=False, plot=False, extrapolate=14, guesses=None, trim=False
 
 
 ###########################################################
-
-def main0(weight=True, plot=False, trim=False):
+def test(weight=True, plot=False, trim=False):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips = fips_key["FIPS"]
+	fips_list = fips_key["FIPS"]
 
-	for county in [36061]:
-		county_data = loader.query(us, "fips", 36061)
-		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
-		if firstnonzero:
-			begin = firstnonzero-14
-			if begin >= 0:
-				county_data = county_data[begin:]
-				#county_data.reset_index(drop=True, inplace=True)
-		# county_data = county_data[:-5]
-		dates = pd.to_datetime(county_data["date"].values)
-		start = dates[0].day
-		extrapolate = (datetime.datetime(2020, 7, 30)-dates[-1])/np.timedelta64(1, 'D')
-		# expand dates using extrapolate
-		predictions, death_errors, res = fit(county_data, weight=weight, plot=plot, extrapolate=extrapolate, trim=trim)
-		parameters = res.x
-		cost = res.cost
-		print(parameters)
-		print(cost)
-
-
-		# submission=[]
-
-	# for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
-	# 	forecast = list(np.percentile(death_errors, percentile, axis=0))
-	# 	submission.append(forecast)
-
-	# submission = np.transpose(submission)
-	# print(submission)
-	# #output 4 tuple of (date, fips, time, )
-
-def main1(weight=True, plot=False, trim=False):
-	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
-	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips = fips_key["FIPS"]
-
-	for county in [36061]:
+	for county in fips_list:
 		county_data = loader.query(us, "fips", county)
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
-		death_time = 14 #find a way to calculate this for each county, possibly using ml or trying to see what shift makes I and D overlap the most
+		death_time = 16
 		if firstnonzero:
 			begin = firstnonzero-death_time
 			if begin >= 0:
 				county_data = county_data[begin:]
 				#county_data.reset_index(drop=True, inplace=True)
-
-		policy_date = 737506 # get from policies.csv using county fips query
+		# county_data = county_data[:-5]
 		dates = pd.to_datetime(county_data["date"].values)
-		start = dates[0]
-		regime_change = int((datetime.datetime.fromordinal(policy_date)-start)/np.timedelta64(1, 'D'))
+		extrapolate = (datetime.datetime(2020, 7, 30)-dates[-1])/np.timedelta64(1, 'D')
+		# expand dates using extrapolate
+		predictions, death_errors, res = fit(county_data, weight=weight, plot=plot, extrapolate=extrapolate, trim=trim)
+		print(parameters)
+		print(cost)
 
-		county_data1 = county_data[:regime_change] # experiment with regime_change+death_time
-		predictions, death_errors1, res1 = fit(county_data1, weight=weight, plot=plot, extrapolate=0, trim=trim)
-		first_parameters = (res1.x)[:17]
-		first_conditions = get_variables(res1, county_data1, regime_change)
-		N = county_data['Population'].values[0]
-		first_conditions = first_conditions/N
-		print(first_conditions)
-		parameter_guess = list(first_parameters)+list(first_conditions)
-		print(np.sum(first_conditions))
-		print(parameter_guess)
+###########################################################
+def format(dates, death_errors, start, county):
+	initial = dates[0].day
+	return 
 
-		county_data2 = county_data[regime_change:]
-		dates2 = dates[regime_change:]
-		county_data2.reset_index(drop=True, inplace=True)
-		for i in range(death_time):
-			county_data2.at[i, "deaths"] *= -1
-		extrapolate = (datetime.datetime(2020, 6, 30)-dates2[-1])/np.timedelta64(1, 'D')
-		predictions, death_errors, res2  = fit(county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, trim=trim)
-		print(predictions)
+def submission(weight=True, trim=True, start, end):
+	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
+	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	fips_list = fips_key["FIPS"]
 
+	for county in fips_list:
+		county_data = loader.query(us, "fips", county)
+		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
+		death_time = 16
+		if firstnonzero:
+			begin = firstnonzero-death_time
+			if begin >= 0:
+				county_data = county_data[begin:]
+		dates = pd.to_datetime(county_data["date"].values)
+		extrapolate = (start-dates[-1])/np.timedelta64(1, 'D')
+		# expand dates using extrapolate
+		predictions, death_errors, res = fit(county_data, weight=weight, plot=False, extrapolate=extrapolate, trim=trim)
+		output = format(dates, death_errors, county, start=start)
+		print(output)
 
 if __name__ == '__main__':
-	# main0(plot=True, trim=True, weight=False)
-	# main0(plot=True, trim=True, weight=True) # we can do A LOT with weighting and different weighting patterns
+	submission(plot=True, trim=True, weight=True)
 
 
 # Tasks

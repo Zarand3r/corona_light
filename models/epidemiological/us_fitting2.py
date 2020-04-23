@@ -165,7 +165,7 @@ def get_deaths(res, data, extrapolate=14):
 	deaths = list(zip(tp,D))
 	return deaths
 # return params, 1 standard deviation errors
-def get_errors(res, p0):
+def get_errors(res, p0, data, extrapolate):
 	p0 = np.array(p0)
 	ysize = len(res.fun)
 	cost = 2 * res.cost  # res.cost is half sum of squares!
@@ -197,7 +197,17 @@ def get_errors(res, p0):
 		return None
 	
 	perr = np.sqrt(np.diag(pcov))
-	return perr
+
+	uncertainty = []
+	samples = 100
+	for i in range(samples):
+		sample = np.random.normal(loc=res.x, scale=perr)
+		s = model(sample, data, len(data)+extrapolate)
+		latest_D = (data["deaths"].values)[-1]
+		if s[:,7][len(data)-1] >= latest_D:
+			uncertainty.append(s)
+
+	return uncertainty
 
 # returns standard deviation of fitted parameters
 def get_param_errors(res, pop):
@@ -652,11 +662,12 @@ def main0(weight=True, plot=False, trim=False):
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips = fips_key["FIPS"]
 
-	for county in [36061]:
-		county_data = loader.query(us, "fips", 36061)
+	for county in [36059, 36061]:
+		county_data = loader.query(us, "fips", county)
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
+		death_time = 16
 		if firstnonzero:
-			begin = firstnonzero-14
+			begin = firstnonzero-death_time
 			if begin >= 0:
 				county_data = county_data[begin:]
 				#county_data.reset_index(drop=True, inplace=True)
@@ -682,48 +693,8 @@ def main0(weight=True, plot=False, trim=False):
 	# print(submission)
 	# #output 4 tuple of (date, fips, time, )
 
-def main1(weight=True, plot=False, trim=False):
-	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
-	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips = fips_key["FIPS"]
 
-	for county in [36061]:
-		county_data = loader.query(us, "fips", county)
-		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
-		death_time = 14 #find a way to calculate this for each county, possibly using ml or trying to see what shift makes I and D overlap the most
-		if firstnonzero:
-			begin = firstnonzero-death_time
-			if begin >= 0:
-				county_data = county_data[begin:]
-				#county_data.reset_index(drop=True, inplace=True)
-
-		policy_date = 737506 # get from policies.csv using county fips query
-		dates = pd.to_datetime(county_data["date"].values)
-		start = dates[0]
-		regime_change = int((datetime.datetime.fromordinal(policy_date)-start)/np.timedelta64(1, 'D'))
-
-		county_data1 = county_data[:regime_change] # experiment with regime_change+death_time
-		predictions, death_errors1, res1 = fit(county_data1, weight=weight, plot=plot, extrapolate=0, trim=trim)
-		first_parameters = (res1.x)[:17]
-		first_conditions = get_variables(res1, county_data1, regime_change)
-		N = county_data['Population'].values[0]
-		first_conditions = first_conditions/N
-		print(first_conditions)
-		parameter_guess = list(first_parameters)+list(first_conditions)
-		print(np.sum(first_conditions))
-		print(parameter_guess)
-
-		county_data2 = county_data[regime_change:]
-		dates2 = dates[regime_change:]
-		county_data2.reset_index(drop=True, inplace=True)
-		for i in range(death_time):
-			county_data2.at[i, "deaths"] *= -1
-		extrapolate = (datetime.datetime(2020, 6, 30)-dates2[-1])/np.timedelta64(1, 'D')
-		predictions, death_errors, res2  = fit(county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, trim=trim)
-		print(predictions)
-
-def main1_2(weight=True, plot=False, trim=False, shift=False):
+def main1(weight=True, plot=False, trim=False, shift=False):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
@@ -763,13 +734,13 @@ def main1_2(weight=True, plot=False, trim=False, shift=False):
 
 
 # Train on the 14 days after regime change and set initial conditions at regime chage to that of previous fit  
-def main2(weight=True, plot=False, trim=False):
+def main2(weight=True, plot=False, trim=False, shift=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips = fips_key["FIPS"]
 
-	for county in [36059]:
+	for county in [36061]:
 		county_data = loader.query(us, "fips", county)
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
 		death_time = 16 #find a way to calculate this for each county, possibly using ml or trying to see what shift makes I and D overlap the most
@@ -794,29 +765,25 @@ def main2(weight=True, plot=False, trim=False):
 		parameter_guess = list(first_parameters)+list(first_conditions)
 		print(parameter_guess)
 
-
-		# county_data2 = county_data
-		# county_data2.reset_index(drop=True, inplace=True)
-		# dates2 = dates
-		# for i in range(regime_change+death_time):
-		# 	county_data2.at[i, "deaths"] *= -1
 		county_data2 = county_data[regime_change:]
 		dates2 = dates[regime_change:]
 		county_data2.reset_index(drop=True, inplace=True)
-		for i in range(death_time):
-			county_data2.at[i, "deaths"] *= -1
-		extrapolate = (datetime.datetime(2020, 6, 30)-dates2[-1])/np.timedelta64(1, 'D')
+		if shift:
+			for i in range(death_time):
+				county_data2.at[i, "deaths"] *= -1
+			extrapolate = (datetime.datetime(2020, 6, 30)-dates2[-1])/np.timedelta64(1, 'D')
 		predictions, death_errors, res2  = fit2(county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, trim=trim)
 
 if __name__ == '__main__':
-	# main0(plot=True, trim=True, weight=False)
+	main0(plot=True, trim=True, weight=True)
 	# main1(plot=True, trim=True, weight=False) # I dont think weighting is beneficial
 	# main2(plot=True, trim=True, weight=True) 
-	main1_2(plot=True, trim=True, weight=False, shift=True)
 
+	main1_2(plot=True, trim=True, weight=False, shift=True)
 	main1_2(plot=True, trim=True, weight=True, shift=True)
 
-
+# Need to make sure the standard deviation parameters are in the bound
+# use shivas CDF function to reduce runtime
 # Tasks
 # Fit Q to active cases
 # Fix equations so variables add up to N
