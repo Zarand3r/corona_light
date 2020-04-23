@@ -33,7 +33,13 @@ def process_data(data_covid, data_population, save=True):
 	covid = loader.load_data(data_covid)
 	loader.convert_dates(covid, "date")
 	population = loader.load_data(data_population)
+	# pcovid[covid["county"]=='New York City']["fips"].fillna(36061, inplace=True)
+	# covid['fips'] = covid.apply(lambda row: 36061, axis=1)
+	covid.loc[covid["county"]=='New York City', "fips"]=36061
 	covid['Population'] = covid.apply(lambda row: loader.query(population, "FIPS", row.fips)['total_pop'], axis=1)
+	covid.dropna(subset=['fips'], inplace=True)
+	covid['fips']=covid['fips'].astype(int)
+	# covid.apply(pd.to_numeric, errors='ignore')
 	if save:
 		covid.to_csv("us_training_data.csv")
 	return covid
@@ -74,13 +80,13 @@ def get_errors(res, p0):
 	return perr
 
 # returns standard deviation of fitted parameters
-def get_param_errors(res, p0):
+def get_param_errors(res, p0, pop):
 	pfit = res.x
 	pcov = res.jac
 	pcov = np.dot(pcov.T, pcov)
 	pcov = np.linalg.pinv(pcov) #uses svd
 	pcov = np.diag(pcov)
-	rcov = np.cov(res.fun)/3750000
+	rcov = np.cov(res.fun)/pop ##
 	perr = pcov * rcov
 	perr = np.sqrt(perr)
 	return perr
@@ -145,8 +151,9 @@ def model_qd(params, data, extrapolate=-1):
 	A0 = initial_conditions[3]
 	I0 = initial_conditions[4]
 	Q0 = initial_conditions[5]
+	# Q0 = data['cases'].values[0]
 	R0 = initial_conditions[6]
-	D0 = data['Deaths'].values[0]
+	D0 = data['deaths'].values[0]
 	offset = data['date_processed'].min()
 	yz_0 = np.array([P0, E0, C0, A0, I0, Q0, R0, D0])
 	
@@ -183,7 +190,8 @@ def get_deaths(res, data, extrapolate=14):
 
 # returns uncertainty of the fit for all variables
 def get_fit_errors(res, p0_params, p0_initial_conditions, data, extrapolate=14):
-	errors = get_param_errors(res, list(p0_params) + list(p0_initial_conditions))
+	population = list(data["Population"])[-1]
+	errors = get_param_errors(res, list(p0_params) + list(p0_initial_conditions), population)
 	errors[len(p0_params):] = 0
 	uncertainty = []
 	samples = 100
@@ -216,16 +224,16 @@ def plot_qd(res, p0_params, p0_initial_conditions, data, extrapolate=14, boundar
 							 y_axis_label = '# people')
 
 	if plot_infectious:
-		p.line(tp, I, color = 'red', line_width = 1, legend = 'All infected')
+		p.line(tp, I, color = 'red', line_width = 1, legend = 'Currently Infected')
 	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
 	p.line(tp, Q, color = 'yellow', line_width = 1, legend = 'Quarantined')
 	p.line(tp, R, color = 'green', line_width = 1, legend = 'Recovered')
 
 	# death
-	p.circle(t, data['Deaths'], color ='black', legend='Real Death')
+	p.circle(t, data['deaths'], color ='black', legend='Real Death')
 
 	# quarantined
-	p.circle(t, data['TotalCurrentlyPositive'], color ='purple', legend='Tested Infected')
+	p.circle(t, data['cases'], color ='purple', legend='Tested Infected')
 	
 	if boundary is not None:
 		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
@@ -258,19 +266,17 @@ def plot_with_errors_sample(res, p0_params, p0_initial_conditions, data, extrapo
 							 y_axis_label = '# people')
 	if plot_infectious:
 		p.varea(x=tp, y1=s1[:, 4], y2=s2[:, 2], color='red', fill_alpha=0.2)
-	p.varea(x=tp, y1=s1[:, 7], y2=s2[:, 7], color='black', fill_alpha=0.2)
-	
-	if plot_infectious:
 		p.line(tp, I, color = 'red', line_width = 1, legend = 'Currently Infected')
+	p.varea(x=tp, y1=s1[:, 7], y2=s2[:, 7], color='black', fill_alpha=0.2)
 	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
 	# p.line(tp, Q, color = 'yellow', line_width = 1, legend = 'Quarantined')
 	# p.line(tp, R, color = 'green', line_width = 1, legend = 'Recovered')
 
 	# death
-	p.circle(t, data['Deaths'], color ='black')
+	p.circle(t, data['deaths'], color ='black')
 
 	# quarantined
-	p.circle(t, data['TotalCurrentlyPositive'], color ='purple')
+	# p.circle(t, data['cases'], color ='purple')
 	
 	if boundary is not None:
 		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
@@ -281,8 +287,8 @@ def plot_with_errors_sample(res, p0_params, p0_initial_conditions, data, extrapo
 
 
 def leastsq_qd(params, data, weight=False):
-	Ddata = (data['Deaths'].values)
-	Idata = (data['TotalCurrentlyPositive'].values)
+	Ddata = (data['deaths'].values)
+	Idata = (data['cases'].values)
 	s = model_qd(params, data)
 
 	P = s[:,0]
@@ -295,6 +301,7 @@ def leastsq_qd(params, data, weight=False):
 	D = s[:,7]
 
 	error = D-Ddata
+	# error = np.concatenate((D-Ddata, Q-Idata))
 	if weight:
 		# mu, sigma = 1, 0.2
 		# w = np.random.normal(mu, sigma, len(error))
@@ -322,10 +329,14 @@ def fit(data, weight=False, plot=False, extrapolate=14):
 			plot_qd(res, params, initial_conditions, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True)
 			plot_with_errors_sample(res, params, initial_conditions, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False)
 		predictions = get_deaths(res, data, extrapolate=extrapolate)
-		errors = get_fit_errors(res, params, initial_conditions, data, extrapolate=extrapolate)
-		death_errors = errors[:,:,-1]
+		# errors = get_fit_errors(res, params, initial_conditions, data, extrapolate=extrapolate)
+		# death_errors = errors[:,:,-1]
+		death_errors = None
 		parameters = res.x 
 		cost = res.cost
+
+		print(predictions)
+		print(cost)
 
 	return (predictions, death_errors, parameters, cost)
 
@@ -337,10 +348,11 @@ def fit(data, weight=False, plot=False, extrapolate=14):
 def main(weight=True, plot=False):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-
-	#iterate through all fips in the column
-	# county = loader.query(us, "fips", fips)
-	# _, death_errors, _ , _ = fit(county, weight=weight, plot=plot, extrapolate=14)
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	fips = fips_key["FIPS"]
+	county = loader.query(us, "fips", 36061)
+	# county=county[5:]
+	_, death_errors, _ , _ = fit(county, weight=weight, plot=plot, extrapolate=30)
 
 	# submission=[]
 
@@ -353,7 +365,7 @@ def main(weight=True, plot=False):
 	# #output 4 tuple of (date, fips, time, )
 
 if __name__ == '__main__':
-	main()
+	main(plot=True)
 
 
 

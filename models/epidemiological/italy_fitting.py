@@ -80,7 +80,7 @@ def get_param_errors(res, p0):
 	pcov = np.dot(pcov.T, pcov)
 	pcov = np.linalg.pinv(pcov) #uses svd
 	pcov = np.diag(pcov)
-	rcov = np.cov(res.fun)/3750000
+	rcov = np.cov(res.fun)/3750000 #replace with population
 	perr = pcov * rcov
 	perr = np.sqrt(perr)
 	return perr

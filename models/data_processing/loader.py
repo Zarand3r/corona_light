@@ -6,14 +6,14 @@ from datetime import timedelta
 import git
 
 
-def load_data(filename, directory=""):
+def load_data(filename, directory="", encoding=None):
 	repo = git.Repo("./", search_parent_directories=True)
 	homedir = repo.working_dir
 	if len(directory) == 0:
 		filepath = f"{homedir}" + filename
 	else:
 		filepath = f"{homedir}" + directory + filename
-	dataframe = pd.read_csv(filepath)
+	dataframe = pd.read_csv(filepath, encoding=encoding)
 	return dataframe 
 
 # TODO make this more dynamic
