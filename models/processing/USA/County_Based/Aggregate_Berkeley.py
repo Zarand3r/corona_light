@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import git
 import os
 
 repo = git.Repo("./", search_parent_directories=True)
