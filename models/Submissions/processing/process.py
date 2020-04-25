@@ -3,14 +3,56 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 from datetime import timedelta
-import git
 
+import git
+import sys
+repo = git.Repo("./", search_parent_directories=True)
+homedir = repo.working_dir
 # FIXES NANs
 
-if __name__ == '__main__':
-	submission = pd.read_csv("../submission1.csv")
+def fix_nans(submission, save=False):
 	submission.fillna(method='ffill', inplace=True)
 	num = submission._get_numeric_data()
 	num[num < 0.1] = 0
-	submission.to_csv("modified_submission.csv", index=False)
-	print(submission.isnull().values.any())
+	if save:
+		submission.to_csv("modified_submission.csv", index=False)
+
+def reformat(file1, file2, save=True):
+	submission = pd.read_csv(file1, index_col=False)
+	modified_submission = pd.read_csv(file2, index_col=False)
+	fix_nans(submission)
+	for index, row in modified_submission.iterrows():
+		current_id = row["id"]
+		replacement = [current_id, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+		forecast = submission[submission["id"]==current_id].values
+		if len(forecast) > 0:
+			replacement = forecast[0]
+		modified_submission.loc[index] = replacement
+		# modified_submission.loc[index, "id"] = (submission[submission["id"]==current_id]).values[0]
+	if save:
+		modified_submission.to_csv("modified_submission.csv", index=False)
+
+def reformat2(file1, file2, save=True):
+	submission = pd.read_csv(file1, index_col=False)
+	modified_submission = pd.read_csv(file2, index_col=False)
+	fix_nans(submission)
+
+	forecast_dict = {}
+	for index, row in submission.iterrows():
+		current_id = row["id"]
+		forecast_dict[current_id] = submission[submission["id"]==current_id].values[0]
+
+	for index, row in modified_submission.iterrows():
+		current_id = row["id"]
+		replacement = forecast_dict.pop(current_id, [current_id, 0, 0, 0, 0, 0, 0, 0, 0, 0]) 
+		modified_submission.loc[index] = replacement
+
+	if save:
+		modified_submission.to_csv("modified_submission.csv", index=False)
+
+
+	
+
+if __name__ == '__main__':
+
+	reformat2("../submission1.csv", f"{homedir}/sample_submission.csv")
