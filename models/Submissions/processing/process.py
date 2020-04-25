@@ -15,9 +15,9 @@ homedir = repo.working_dir
 
 def fix_nans(submission, save=False):
 	submission.fillna(method='ffill', inplace=True)
-	# # Do this stuff in the code that generates the error bounds instead of here
-	# num = submission._get_numeric_data()
-	# num[num < 0.1] = 0.00
+	# Do this stuff in the code that generates the error bounds instead of here
+	num = submission._get_numeric_data()
+	num[num < 0.1] = 0.00
 	if save:
 		submission.to_csv("modified_submission.csv", index=False)
 
@@ -33,6 +33,15 @@ def reformat(file1, file2, save=True):
 	forecast_dict = {}
 	for index, row in submission.iterrows():
 		current_id = row["id"]
+		forecast = row.values
+		# Do this stuff in the code that generates the error bounds instead of here
+		thresh = 2*forecast[5]
+		if row[7] > thresh:
+			row[7] = thresh
+		if row[8] > thresh:
+			row[8] = 2*thresh
+		if row[9] > thresh:
+			row[9] = 3*thresh
 		forecast_dict[current_id] = row.values
 
 	end = len(modified_submission)
