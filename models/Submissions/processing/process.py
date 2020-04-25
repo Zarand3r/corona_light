@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from itertools import islice
 import datetime
 from datetime import timedelta
 import csv
@@ -44,9 +45,13 @@ def reformat2(file1, file2, save=True):
 	forecast_dict = {}
 	for index, row in submission.iterrows():
 		current_id = row["id"]
-		forecast_dict[current_id] = submission[submission["id"]==current_id].values[0]
+		forecast_dict[current_id] = row.values
 
+	start = 0
+	end = len(modified_submission)
+	# for index, row in islice(modified_submission.iterrows(), start, end):
 	for index, row in modified_submission.iterrows():
+		print(f"{index} / {end}")
 		current_id = row["id"]
 		replacement = forecast_dict.pop(current_id, [current_id, 0, 0, 0, 0, 0, 0, 0, 0, 0]) 
 		final_submission.append(replacement)
