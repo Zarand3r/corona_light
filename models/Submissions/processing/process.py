@@ -35,13 +35,16 @@ def reformat(file1, file2, save=True):
 		current_id = row["id"]
 		forecast = row.values
 		# Do this stuff in the code that generates the error bounds instead of here
-		thresh = 2*forecast[5]
-		if row[7] > thresh:
-			row[7] = thresh
-		if row[8] > thresh:
-			row[8] = 2*thresh
-		if row[9] > thresh:
-			row[9] = 3*thresh
+		limit = 50000.00
+		if forecast[-1] > limit:
+			for i in range(1,6):
+				if forecast[i] > limit:
+					forecast[i] = limit
+			thresh = forecast[5]
+			row[6] = 1.05*thresh
+			row[7] = 1.1*thresh
+			row[8] = 1.15*thresh
+			row[9] = 1.2*thresh
 		forecast_dict[current_id] = row.values
 
 	end = len(modified_submission)
