@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime
 from datetime import timedelta
+import csv
+
 
 import git
 import sys
@@ -54,7 +56,7 @@ def reformat2(file1, file2, save=True):
 		with open('modified_submission2.csv', 'w') as submission_file:
 			writer = csv.writer(submission_file, delimiter=',')
 			writer.writerow(header)
-			writer.writerows(submission)
+			writer.writerows(final_submission)
 
 	
 
