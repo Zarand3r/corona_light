@@ -102,7 +102,7 @@ if __name__ == '__main__':
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
-	with open('submission1.csv', 'w') as submission_file:
+	with open('predictions.csv', 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
 		writer.writerow(header)
 		writer.writerows(submission)
