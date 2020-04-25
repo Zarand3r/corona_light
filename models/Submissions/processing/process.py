@@ -15,8 +15,9 @@ homedir = repo.working_dir
 
 def fix_nans(submission, save=False):
 	submission.fillna(method='ffill', inplace=True)
-	num = submission._get_numeric_data()
-	num[num < 0.1] = 0
+	# # Do this stuff in the code that generates the error bounds instead of here
+	# num = submission._get_numeric_data()
+	# num[num < 0.1] = 0.00
 	if save:
 		submission.to_csv("modified_submission.csv", index=False)
 
@@ -24,6 +25,8 @@ def reformat(file1, file2, save=True):
 	submission = pd.read_csv(file1, index_col=False)
 	modified_submission = pd.read_csv(file2, index_col=False)
 	fix_nans(submission)
+	# convert to floats
+	submission[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = submission[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
 
 	final_submission = []
 
@@ -32,13 +35,12 @@ def reformat(file1, file2, save=True):
 		current_id = row["id"]
 		forecast_dict[current_id] = row.values
 
-	start = 0
 	end = len(modified_submission)
 	# for index, row in islice(modified_submission.iterrows(), start, end):
 	for index, row in modified_submission.iterrows():
 		print(f"{index} / {end}")
 		current_id = row["id"]
-		replacement = forecast_dict.pop(current_id, [current_id, 0, 0, 0, 0, 0, 0, 0, 0, 0]) 
+		replacement = forecast_dict.pop(current_id, [current_id, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]) 
 		final_submission.append(replacement)
 
 	if save:
