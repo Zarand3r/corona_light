@@ -638,7 +638,7 @@ def leastsq_qd2(params, data, weight=False):
 def fit2(data, guesses, weight=False, plot=False, extrapolate=14, trim=False):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
 	initial_ranges = [(0.9*guesses[17],1.1*guesses[17]), (0.9*guesses[18],1.1*guesses[18]), (0.9*guesses[19],1.1*guesses[19]), (0.9*guesses[20],1.1*guesses[20]), (0.9*guesses[21],1.1*guesses[21]), \
-	(0.9*guesses[22],1.1*guesses[22]), (0.9*guesses[23],1.1*guesses[23]), (0.5*guesses[24],2*guesses[24])]
+	(0.9*guesses[22],1.1*guesses[22]), (0.9*guesses[23],1.1*guesses[23]), (0.1*guesses[24],10*guesses[24])]
 	ranges = param_ranges+initial_ranges
 
 	for boundary in [len(data)]:
@@ -674,7 +674,7 @@ def main0(weight=True, plot=False, trim=False):
 		# county_data = county_data[:-5]
 		dates = pd.to_datetime(county_data["date"].values)
 		start = dates[0].day
-		extrapolate = (datetime.datetime(2020, 7, 30)-dates[-1])/np.timedelta64(1, 'D')
+		extrapolate = (datetime.datetime(2020, 6, 30)-dates[-1])/np.timedelta64(1, 'D')
 		# expand dates using extrapolate
 		predictions, death_errors, res = fit(county_data, weight=weight, plot=plot, extrapolate=extrapolate, trim=trim)
 		parameters = res.x

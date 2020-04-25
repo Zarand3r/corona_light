@@ -24,6 +24,8 @@ def convert_dates(dataframe, timestampkey):
 
 def query(dataframe, query_key, query_val, reset=True):
 	query_data = dataframe[dataframe[query_key]==query_val]
+	if len(query_data) == 0:
+		print("this is empty")
 	if reset:
 		query_data.reset_index(drop=True, inplace=True)
 	return query_data
