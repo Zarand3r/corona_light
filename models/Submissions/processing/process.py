@@ -37,6 +37,8 @@ def reformat2(file1, file2, save=True):
 	modified_submission = pd.read_csv(file2, index_col=False)
 	fix_nans(submission)
 
+	final_submission = []
+
 	forecast_dict = {}
 	for index, row in submission.iterrows():
 		current_id = row["id"]
@@ -45,11 +47,14 @@ def reformat2(file1, file2, save=True):
 	for index, row in modified_submission.iterrows():
 		current_id = row["id"]
 		replacement = forecast_dict.pop(current_id, [current_id, 0, 0, 0, 0, 0, 0, 0, 0, 0]) 
-		modified_submission.loc[index] = replacement
+		final_submission.append(replacement)
 
 	if save:
-		modified_submission.to_csv("modified_submission.csv", index=False)
-
+		header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
+		with open('modified_submission2.csv', 'w') as submission_file:
+			writer = csv.writer(submission_file, delimiter=',')
+			writer.writerow(header)
+			writer.writerows(submission)
 
 	
 
