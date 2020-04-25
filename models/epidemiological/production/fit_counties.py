@@ -486,7 +486,7 @@ def submission(end, weight=True, trim=False, strict=True):
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
 
-	for county in fips_list[:10]:
+	for county in fips_list:
 		county_data = loader.query(us, "fips", county)
 		if len(county_data) == 0:
 			continue
@@ -513,6 +513,7 @@ def submission(end, weight=True, trim=False, strict=True):
 	return (np.array(counties_dates), np.array(counties_death_errors), np.array(counties_fips))
 
 if __name__ == '__main__':
+	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	end = datetime.datetime(2020, 6, 30)
 	counties_dates, counties_death_errors, counties_fips = submission(end, weight=True, strict=True)
 	# test(weight=True, strict=True, getbounds=True)
