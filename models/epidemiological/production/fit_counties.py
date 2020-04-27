@@ -332,8 +332,8 @@ def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None,
 	uncertainty = get_fit_errors(res, p0_params, data, extrapolate=extrapolate, trim=trim, strict=strict)
 	
 	if strict: 
-		s1 = np.nanpercentile(uncertainty, 25, axis=0)
-		s2 = np.nanpercentile(uncertainty, 75, axis=0)
+		s1 = np.nanpercentile(uncertainty, 10, axis=0)
+		s2 = np.nanpercentile(uncertainty, 90, axis=0)
 
 		t = np.arange(0, len(data))
 		tp = np.arange(0, len(data)+extrapolate)
@@ -455,7 +455,7 @@ def test(weight=True, plot=False, trim=False, strict=False, getbounds=False):
 	fips = fips_key["FIPS"]
 
 	# for county in [36059, 36001, 36103, 36061]:
-	for county in [36103]:
+	for county in [36061]:
 		county_data = loader.query(us, "fips", county)
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
 		death_time = 16
@@ -514,9 +514,9 @@ def submission(end, weight=True, trim=False, strict=True):
 
 if __name__ == '__main__':
 	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	end = datetime.datetime(2020, 6, 30)
-	counties_dates, counties_death_errors, counties_fips = submission(end, weight=True, strict=True)
-	# test(weight=True, strict=True, getbounds=True)
+	# end = datetime.datetime(2020, 6, 30)
+	# counties_dates, counties_death_errors, counties_fips = submission(end, weight=True, strict=True)
+	test(weight=True, strict=True, plot=True)
 
 
 # Tasks
