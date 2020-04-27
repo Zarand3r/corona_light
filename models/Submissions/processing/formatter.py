@@ -57,7 +57,7 @@ def reformat(file1, file2, save=True):
 
 	if save:
 		header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
-		with open('formatted_submission.csv', 'w') as submission_file:
+		with open('../model1/formatted_prediction.csv', 'w') as submission_file:
 			writer = csv.writer(submission_file, delimiter=',')
 			writer.writerow(header)
 			writer.writerows(final_submission)

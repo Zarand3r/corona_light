@@ -10,8 +10,10 @@ import git
 import sys
 repo = git.Repo("./", search_parent_directories=True)
 homedir = repo.working_dir
+sys.path.insert(0, f"{homedir}" + '/models/submissions/processing/')
 sys.path.insert(1, f"{homedir}" + '/models/epidemiological/production')
 import fit_counties
+import formatter2
 
 
 # hashtable with month and number of days in the month
@@ -101,11 +103,14 @@ if __name__ == '__main__':
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
+	output_file = 'predictions.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
-	with open('predictions.csv', 'w') as submission_file:
+	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
 		writer.writerow(header)
 		writer.writerows(submission)
+
+	formatter2.reformat(output_file, save=True, fix=True)
 
 	# np.savetxt("submission1.csv", submission, delimiter=",", header=header)
 
