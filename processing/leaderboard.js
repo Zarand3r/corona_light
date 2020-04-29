@@ -1,76 +1,77 @@
 leaderboard = `
-"bitsplease",0.128444
-"sovclub",0.135004
-"Underestimators",0.145708
-"Mystics of Tarot",0.159247
-"Curve Flattened",0.161650
-"Firewall",0.161929
-"Python charmers",0.165176
-"Central Cats",0.171503
-"Bparentheses",0.172322
-"Socially Distanced",0.173714
-"Big Clappy",0.179610
-"3 Commas",0.183088
-"RNGesus",0.190073
-"deep fried oreos",0.207015
-"rona szn",0.210237
-"Tentin Quarantino",0.214763
-"Virus Goin Back",0.221372
-"[Benchmark]",0.230097
-"Team 1",0.234779
-"NAIVE",0.238826
-"billy-kimba",0.245129
-"Unflixable",0.254742
-"Random perMutation",0.261877
-"Gorgonio",0.266506
-"goosefish",0.282915
-"Jar Half Empty",0.285153
-"Mask_Man",0.305827
-"Last Place",0.308126
-"BunnyTeam",0.311225
-"A Team",0.314272
-"Covengers",0.314272
-"Evolving Situation",0.314272
-"Global Minimum Gang",0.314272
-"Host_4056_Team",0.314272
-"Learning Support",0.314272
-"Noninvasive",0.314272
-"Orange Watch",0.314272
-"Pay The Price",0.314272
-"Priests of Horus",0.314272
-"Self Quaranteens",0.314272
-"The Oracles",0.314272
-"The Outsiders",0.314272
-"T_T",0.314272
-"tiny-fondue-hands",0.318687
-"OwO",0.322689
-"Team 23",0.332963
-"SER",0.343594
-"brownies",0.413007
-"Social Inferencing",0.823843
-"Undecided 2.0",0.868106
-"Mertocracy",3.881388
-"Literally Anything",4.046280
-"SKTW",4.997176
-"crocs",6.582119
-"two_and_a_half_cs_majors",6.652015
-"ASCIT_DONUT test3",9.006153
-"TPLink",44.900845
+"bitsplease",0.133069
+"sovclub",0.147995
+"Underestimators",0.148516
+"[Updated Benchmark]",0.152876
+"Curve Flattened",0.153739
+"Bparentheses",0.164104
+"Big Clappy",0.166451
+"3 Commas",0.166638
+"Python charmers",0.168666
+"Central Cats",0.169657
+"Mystics of Tarot",0.169743
+"Firewall",0.174653
+"RNGesus",0.184671
+"rona szn",0.187630
+"Virus Goin Back",0.191603
+"Socially Distanced",0.193927
+"Pay The Price",0.197768
+"Team 1",0.198317
+"billy-kimba",0.210544
+"[Benchmark]",0.213311
+"NAIVE",0.217418
+"Random perMutation",0.224686
+"Tentin Quarantino",0.229983
+"deep fried oreos",0.244672
+"Gorgonio",0.253681
+"Last Place",0.259796
+"A Team",0.262677
+"Covengers",0.262677
+"Evolving Situation",0.262677
+"Global Minimum Gang",0.262677
+"Host_4056_Team",0.262677
+"Learning Support",0.262677
+"Orange Watch",0.262677
+"Priests of Horus",0.262677
+"Self Quaranteens",0.262677
+"The Oracles",0.262677
+"The Outsiders",0.262677
+"T_T",0.262677
+"BunnyTeam",0.265811
+"tiny-fondue-hands",0.286910
+"Unflixable",0.296948
+"goosefish",0.302661
+"Jar Half Empty",0.319825
+"Noninvasive",0.327817
+"Team 23",0.348622
+"SER",0.350690
+"Mask_Man",0.389107
+"brownies",0.433991
+"Social Inferencing",1.017665
+"Undecided 2.0",1.532934
+"OwO",1.968772
+"Mertocracy",4.000258
+"Literally Anything",4.571214
+"SKTW",4.890349
+"crocs",7.000600
+"two_and_a_half_cs_majors",7.148919
+"ASCIT_DONUT test3",9.737360
+"TPLink",44.868607
 `;ensemble_weight = `
-"3 Commas",0.000000
+"3 Commas",0.197091
 "A Team",0.000000
-"ASCIT_DONUT test3",0.000747
-"Big Clappy",0.000000
+"ASCIT_DONUT test3",0.000824
+"Big Clappy",0.124839
 "billy-kimba",0.000000
 "bitsplease",0.000000
 "Bparentheses",0.000000
-"brownies",0.000000
+"brownies",0.031361
 "BunnyTeam",0.000000
-"Central Cats",0.362853
+"Central Cats",0.000000
 "Covengers",0.000000
 "crocs",0.000000
 "Curve Flattened",0.000000
-"deep fried oreos",0.000000
+"deep fried oreos",0.020096
 "Evolving Situation",0.000000
 "Firewall",0.000000
 "Global Minimum Gang",0.000000
@@ -81,10 +82,10 @@ leaderboard = `
 "Last Place",0.000000
 "Learning Support",0.000000
 "Literally Anything",0.000000
-"Mask_Man",0.000000
-"Mertocracy",0.008673
-"Mystics of Tarot",0.235813
-"NAIVE",0.022284
+"Mask_Man",0.008756
+"Mertocracy",0.006353
+"Mystics of Tarot",0.070084
+"NAIVE",0.000000
 "Noninvasive",0.000000
 "Orange Watch",0.000000
 "OwO",0.000000
@@ -96,81 +97,83 @@ leaderboard = `
 "rona szn",0.000000
 "Self Quaranteens",0.000000
 "SER",0.000000
-"SKTW",0.000590
+"SKTW",0.000000
 "Social Inferencing",0.000000
 "Socially Distanced",0.000000
-"sovclub",0.177549
+"sovclub",0.000000
 "Team 1",0.000000
-"Team 23",0.000000
+"Team 23",0.072253
 "Tentin Quarantino",0.000000
 "The Oracles",0.000000
 "The Outsiders",0.000000
 "tiny-fondue-hands",0.000000
-"TPLink",0.000000
+"TPLink",0.000113
 "two_and_a_half_cs_majors",0.000000
 "T_T",0.000000
 "Undecided 2.0",0.000000
-"Underestimators",0.070222
-"Unflixable",0.037787
+"Underestimators",0.017739
+"Unflixable",0.005862
 "Virus Goin Back",0.000000
-"[Benchmark]",0.019394
+"[Benchmark]",0.000000
+"[Updated Benchmark]",0.295809
 `;rmse = `
-"3 Commas",2.219796
-"A Team",5.897192
-"ASCIT_DONUT test3",375.918359
-"Big Clappy",3.044371
-"billy-kimba",4.173555
-"bitsplease",1.467631
-"Bparentheses",2.384247
-"brownies",4.802457
-"BunnyTeam",4.617301
-"Central Cats",2.680857
-"Covengers",5.897192
-"crocs",124.717929
-"Curve Flattened",2.241636
-"deep fried oreos",6.001640
-"Evolving Situation",5.897192
-"Firewall",3.627420
-"Global Minimum Gang",5.897192
-"goosefish",8.153197
-"Gorgonio",5.598180
-"Host_4056_Team",5.897192
-"Jar Half Empty",10.714772
-"Last Place",5.529997
-"Learning Support",5.897192
-"Literally Anything",67.802455
-"Mask_Man",9.354468
-"Mertocracy",99.825662
-"Mystics of Tarot",1.715033
-"NAIVE",5.177412
-"Noninvasive",5.897192
-"Orange Watch",5.897192
-"OwO",6.719782
-"Pay The Price",5.897192
-"Priests of Horus",5.897192
-"Python charmers",1.529551
-"Random perMutation",5.806624
-"RNGesus",3.342452
-"rona szn",2.462049
-"Self Quaranteens",5.897192
-"SER",6.995812
-"SKTW",108.974544
-"Social Inferencing",11.595528
-"Socially Distanced",4.179131
-"sovclub",1.387898
-"Team 1",5.746419
-"Team 23",13.341755
-"Tentin Quarantino",4.944335
-"The Oracles",5.897192
-"The Outsiders",5.897192
-"tiny-fondue-hands",3.759773
-"TPLink",132.929755
-"two_and_a_half_cs_majors",122.190945
-"T_T",5.897192
-"Undecided 2.0",89.953939
-"Underestimators",1.679343
-"Unflixable",3.686765
-"Virus Goin Back",5.138762
-"[Benchmark]",3.712348
+"3 Commas",2.495359
+"A Team",5.558837
+"ASCIT_DONUT test3",404.202834
+"Big Clappy",3.276060
+"billy-kimba",4.126788
+"bitsplease",2.093016
+"Bparentheses",2.349077
+"brownies",4.723809
+"BunnyTeam",3.839662
+"Central Cats",3.065463
+"Covengers",5.558837
+"crocs",134.073013
+"Curve Flattened",2.489087
+"deep fried oreos",8.297333
+"Evolving Situation",5.558837
+"Firewall",5.011230
+"Global Minimum Gang",5.558837
+"goosefish",8.770515
+"Gorgonio",5.194189
+"Host_4056_Team",5.558837
+"Jar Half Empty",11.634766
+"Last Place",5.627231
+"Learning Support",5.558837
+"Literally Anything",76.313034
+"Mask_Man",7.833212
+"Mertocracy",101.919168
+"Mystics of Tarot",2.389522
+"NAIVE",5.042120
+"Noninvasive",5.649736
+"Orange Watch",5.558837
+"OwO",441.405863
+"Pay The Price",3.807137
+"Priests of Horus",5.558837
+"Python charmers",1.956274
+"Random perMutation",5.481601
+"RNGesus",3.674003
+"rona szn",2.450533
+"Self Quaranteens",5.558837
+"SER",7.279547
+"SKTW",110.471116
+"Social Inferencing",12.472869
+"Socially Distanced",5.857654
+"sovclub",2.066109
+"Team 1",5.319759
+"Team 23",14.042459
+"Tentin Quarantino",5.552264
+"The Oracles",5.558837
+"The Outsiders",5.558837
+"tiny-fondue-hands",3.532872
+"TPLink",133.090756
+"two_and_a_half_cs_majors",130.244664
+"T_T",5.558837
+"Undecided 2.0",129.071253
+"Underestimators",2.116981
+"Unflixable",4.532025
+"Virus Goin Back",4.961620
+"[Benchmark]",3.961171
+"[Updated Benchmark]",2.849956
 `;
- refresh_date = '2020-04-24';
+ refresh_date = '2020-04-26';
