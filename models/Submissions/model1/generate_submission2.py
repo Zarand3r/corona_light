@@ -14,6 +14,7 @@ sys.path.insert(0, f"{homedir}" + '/models/submissions/processing/')
 sys.path.insert(1, f"{homedir}" + '/models/epidemiological/production')
 import fit_counties2_0
 import formatter2
+import daily
 
 
 # hashtable with month and number of days in the month
@@ -114,6 +115,7 @@ if __name__ == '__main__':
 		writer.writerow(header)
 		writer.writerows(submission)
 
+	output_file = daily.convert(output_file)
 	formatter2.reformat(output_file, save=True, fix=False)
 
 

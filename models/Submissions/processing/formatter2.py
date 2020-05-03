@@ -19,7 +19,7 @@ def fix_nans(submission):
 	num = submission._get_numeric_data()
 	num[num < 0.1] = 0.00
 
-def fix_submission(submission):
+def fix_submission(submission, file_path):
 	pop = pd.read_csv(f"{homedir}/data/us/demographics/county_populations.csv")
 	submission['Date'] = submission.id.str.rsplit("-", n = 1, expand = True)[0]
 	submission['FIPS'] = submission.id.str.rsplit("-", n = 1, expand = True)[1].astype(int)
@@ -57,7 +57,7 @@ def fix_submission(submission):
 
 
 def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=False):
-	output_path = 'formatted_prediction2.csv'
+	output_path = f"{homedir}" + '/models/submissions/model1/submission2.csv'
 	submission = pd.read_csv(file1, index_col=False)
 	sample_submission = pd.read_csv(file2, index_col=False)
 	fix_nans(submission)
@@ -93,4 +93,4 @@ def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=Fal
 	
 
 if __name__ == '__main__':
-	reformat("../model1/predictions.csv", f"{homedir}/sample_submission.csv")
+	reformat("../model1/daily_predictions2.csv", f"{homedir}/sample_submission.csv")
