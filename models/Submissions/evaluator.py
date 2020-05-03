@@ -11,8 +11,8 @@ sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
 
-# csv_to_score = 'checkpoint1/submission2.csv'
-csv_to_score = f"{homedir}"+ '/sample_submission.csv'
+csv_to_score = 'checkpoint1/submission2_1.csv'
+# csv_to_score = f"{homedir}"+ '/sample_submission.csv'
 
 def get_date(x):
     return '-'.join(x.split('-')[:3])

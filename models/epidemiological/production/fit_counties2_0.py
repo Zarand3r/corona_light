@@ -42,6 +42,78 @@ def process_data(data_covid, data_population, save=True):
 		covid.to_csv(f"{homedir}" + "/models/epidemiological/production/us_training_data.csv")
 	return covid
 
+
+###########################################################
+
+def get_variables(res, data, index):
+	extrapolate = -1
+	if index > len(data)-1:
+		extrapolate = index + (index-len(data)+1)
+	s = model(res.x, data, extrapolate=extrapolate)
+	P = s[:,0][index]
+	E = s[:,1][index]
+	C = s[:,2][index]
+	A = s[:,3][index]
+	I = s[:,4][index]
+	Q = s[:,5][index]
+	R = s[:,6][index]
+
+	return (P,E,C,A,I,Q,R)
+
+def get_deaths(res, data, extrapolate=14):   
+	s = model(res.x, data, len(data)+extrapolate)
+	P = s[:,0]
+	E = s[:,1]
+	C = s[:,2]
+	A = s[:,3]
+	I = s[:,4]
+	Q = s[:,5]
+	R = s[:,6]
+	D = s[:,7]
+	tp = np.arange(0, len(data)+extrapolate)
+	deaths = list(zip(tp,D))
+	return deaths
+
+def get_death_cdf(death_pdf, switch=True):
+	death_cdf = []
+	for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
+		forecast = list(np.nanpercentile(death_pdf, percentile, axis=0))
+		death_cdf.append(forecast)
+
+	if switch == False:
+		if np.mean(np.array(death_cdf[-1])/np.array(death_cdf)) > 2:
+			print("recalculate error bounds")
+			death_cdf = None
+
+	return death_cdf
+
+def reject_outliers(data, m = 1.):
+	data = np.array(data)
+	d = np.abs(data - np.median(data))
+	mdev = np.median(d)
+	s = d/mdev if mdev else 0.
+	return data[s<m]
+	
+# def reject_outliers(data, m=2):
+# 	data = np.array(data)
+#     return data[abs(data - np.mean(data)) < m * np.std(data)]
+
+# returns standard deviation of fitted parameters
+def get_param_errors(res, pop):
+	pfit = res.x
+	pcov = res.jac
+	pcov = np.dot(pcov.T, pcov)
+	pcov = np.linalg.pinv(pcov) #uses svd
+	pcov = np.diag(pcov)
+	rcov = np.cov(res.fun)/pop ##put res.fun/pop inside
+	# scaler = res.cost*len(res.fun)/pop 
+	# rcov = rcov * scaler
+	perr = pcov * rcov
+	perr = np.sqrt(perr)
+	return perr
+
+###########################################################
+
 def pecaiqr(dat, t, params, N, max_t):
 	# define a time td of social distancing
 	# for t > td, divide dI/dt and dA/dt and dQ/dt and dC/dt by 2 
@@ -108,7 +180,7 @@ def model(params, data, extrapolate=-1, offset=0):
 		n += extrapolate
 	args = (params, N, n)
 	try:
-		s = scipy.integrate.odeint(pecaiqr, yz_0, np.arange(offset, n), args=args, printmessg=True)
+		s = scipy.integrate.odeint(pecaiqr, yz_0, np.arange(offset, n), args=args) #printmsg = True
 		# s = scipy.integrate.solve_ivp(fun=lambda t, y: pecaiqr(y, t, params, N, n), t_span=[offset, n], y0=yz_0, t_eval=np.arange(offset, n), method="LSODA")
 	except RuntimeError:
 		print('RuntimeError', params)
@@ -116,75 +188,29 @@ def model(params, data, extrapolate=-1, offset=0):
 
 	return s
 
-def get_variables(res, data, index):
-	extrapolate = -1
-	if index > len(data)-1:
-		extrapolate = index + (index-len(data)+1)
-	s = model(res.x, data, extrapolate=extrapolate)
-	P = s[:,0][index]
-	E = s[:,1][index]
-	C = s[:,2][index]
-	A = s[:,3][index]
-	I = s[:,4][index]
-	Q = s[:,5][index]
-	R = s[:,6][index]
-
-	return (P,E,C,A,I,Q,R)
-
-def get_deaths(res, data, extrapolate=14):   
-	s = model(res.x, data, len(data)+extrapolate)
-	P = s[:,0]
-	E = s[:,1]
-	C = s[:,2]
-	A = s[:,3]
-	I = s[:,4]
-	Q = s[:,5]
-	R = s[:,6]
-	D = s[:,7]
-	tp = np.arange(0, len(data)+extrapolate)
-	deaths = list(zip(tp,D))
-	return deaths
-
-def reject_outliers(data, m = 1.):
-	data = np.array(data)
-	d = np.abs(data - np.median(data))
-	mdev = np.median(d)
-	s = d/mdev if mdev else 0.
-	return data[s<m]
+def model_ivp(params, data, extrapolate=-1, offset=0):
+	N = data['Population'].values[0] # total population
+	initial_conditions = N * np.array(params[-7:]) # the parameters are a fraction of the population so multiply by the population
+	P0 = initial_conditions[0]
+	E0 = initial_conditions[1]
+	C0 = initial_conditions[2]
+	A0 = initial_conditions[3]
+	I0 = initial_conditions[4]
+	Q0 = initial_conditions[5]
+	# Q0 = data['active_cases'].values[0] #fit to active cases instead
+	R0 = initial_conditions[6]
+	D0 = abs(data['deaths'].values[0])
+	yz_0 = np.array([P0, E0, C0, A0, I0, Q0, R0, D0])
 	
-# def reject_outliers(data, m=2):
-# 	data = np.array(data)
-#     return data[abs(data - np.mean(data)) < m * np.std(data)]
+	n = len(data) + extrapolate
 
-# returns standard deviation of fitted parameters
-def get_param_errors(res, pop):
-	pfit = res.x
-	pcov = res.jac
-	pcov = np.dot(pcov.T, pcov)
-	pcov = np.linalg.pinv(pcov) #uses svd
-	pcov = np.diag(pcov)
-	rcov = np.cov(res.fun)/pop ##put res.fun/pop inside
-	# scaler = res.cost*len(res.fun)/pop 
-	# rcov = rcov * scaler
-	perr = pcov * rcov
-	perr = np.sqrt(perr)
-	return perr
-
-def estimate_bounds(res, data):
-	residuals = res.fun
-	normalized_residuals = []
-	for index, death in enumerate(data["deaths"].values):
-		if death > 0:
-			normalized_residuals.append((residuals[index])/death)
-	normalized_residuals = reject_outliers(normalized_residuals)
-	normalized_residuals = abs(normalized_residuals)
-	mean = None
-	deviation = None
-	if len(normalized_residuals) > 0:
-		# mean = sum(normalized_residuals)/len(normalized_residuals)
-		mean = 0
-		deviation = np.std(normalized_residuals)
-	return (mean,deviation)
+	solved = scipy.integrate.solve_ivp(fun=lambda t, y: pecaiqr(y, t, params, N, n), t_span=[offset, n], y0=yz_0, t_eval=np.arange(offset, n), method="LSODA")
+	s = solved.y
+	status = solved.success
+	print(status)
+	# if status is False or diff < 0:
+	# 	s = None 
+	return s	
 
 def model_beyond(fit, params, data, guess_bounds, extrapolate=-1, start=-1):
 	offset = len(data)+start
@@ -216,6 +242,22 @@ def model_beyond(fit, params, data, guess_bounds, extrapolate=-1, start=-1):
 		# return np.zeros((n, len(yz_0)))
 	return s[:,7]
 
+
+def estimate_bounds(res, data):
+	residuals = res.fun
+	normalized_residuals = []
+	for index, death in enumerate(data["deaths"].values):
+		if death > 0:
+			normalized_residuals.append((residuals[index])/death)
+	normalized_residuals = reject_outliers(normalized_residuals)
+	normalized_residuals = abs(normalized_residuals)
+	mean = None
+	deviation = None
+	if len(normalized_residuals) > 0:
+		# mean = sum(normalized_residuals)/len(normalized_residuals)
+		mean = 0
+		deviation = np.std(normalized_residuals)
+	return (mean,deviation)
 
 def quickie(fit, data, guess_bounds, start=-1):
 	offset = len(data)+start
@@ -279,25 +321,15 @@ def mse_qd(A, B):
 	return mean_squared_error(Ap, Bp)
 
 def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False):   
-	# s = model(res.x, data, extrapolate=extrapolate)
-	# P = s[:,0]
-	# E = s[:,1]
-	# C = s[:,2]
-	# A = s[:,3]
-	# I = s[:,4]
-	# Q = s[:,5]
-	# R = s[:,6]
-	# D = s[:,7]
-
-	s = model_ivp(res.x, data, extrapolate=extrapolate)
-	P = s[0]
-	E = s[1]
-	C = s[2]
-	A = s[3]
-	I = s[4]
-	Q = s[5]
-	R = s[6]
-	D = s[7]
+	s = model(res.x, data, extrapolate=extrapolate)
+	P = s[:,0]
+	E = s[:,1]
+	C = s[:,2]
+	A = s[:,3]
+	I = s[:,4]
+	Q = s[:,5]
+	R = s[:,6]
+	D = s[:,7]
 
 	t = np.arange(0, len(data))
 	tp = np.arange(0, len(data)+extrapolate)
@@ -332,25 +364,15 @@ def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False):
 	bokeh.io.show(p)
 
 def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None, plot_infectious=False, start=-1, quick=False):
-	# s = model(res.x, data, len(data)+extrapolate)
-	# P = s[:,0]
-	# E = s[:,1]
-	# C = s[:,2]
-	# A = s[:,3]
-	# I = s[:,4]
-	# Q = s[:,5]
-	# R = s[:,6]
-	# D = s[:,7]
-
-	s = model_ivp(res.x, data, extrapolate=extrapolate)
-	P = s[0]
-	E = s[1]
-	C = s[2]
-	A = s[3]
-	I = s[4]
-	Q = s[5]
-	R = s[6]
-	D = s[7]
+	s = model(res.x, data, len(data)+extrapolate)
+	P = s[:,0]
+	E = s[:,1]
+	C = s[:,2]
+	A = s[:,3]
+	I = s[:,4]
+	Q = s[:,5]
+	R = s[:,6]
+	D = s[:,7]
 
 	uncertainty = get_fit_errors(res, p0_params, data, extrapolate=extrapolate, start=start, quick=quick)
 	
@@ -381,29 +403,6 @@ def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None,
 	bokeh.io.show(p)
 	return uncertainty
 
-def model_ivp(params, data, extrapolate=-1, offset=0):
-	N = data['Population'].values[0] # total population
-	initial_conditions = N * np.array(params[-7:]) # the parameters are a fraction of the population so multiply by the population
-	P0 = initial_conditions[0]
-	E0 = initial_conditions[1]
-	C0 = initial_conditions[2]
-	A0 = initial_conditions[3]
-	I0 = initial_conditions[4]
-	Q0 = initial_conditions[5]
-	# Q0 = data['active_cases'].values[0] #fit to active cases instead
-	R0 = initial_conditions[6]
-	D0 = abs(data['deaths'].values[0])
-	yz_0 = np.array([P0, E0, C0, A0, I0, Q0, R0, D0])
-	
-	n = len(data) + extrapolate
-
-	solved = scipy.integrate.solve_ivp(fun=lambda t, y: pecaiqr(y, t, params, N, n), t_span=[offset, n], y0=yz_0, t_eval=np.arange(offset, n), method="LSODA")
-	s = solved.y
-	status = solved.success
-	print(status)
-	# if status is False or diff < 0:
-	# 	s = None 
-	return s	
 
 def test_convergence(data_length, predictions):
 	converge = True
@@ -594,11 +593,12 @@ def submission(end, weight=True, guesses=None, start=-1, quick=False, moving=Fal
 			nonconvergent.append(county)
 			continue
 
+		death_cdf = get_death_cdf(death_pdf, switch=quick)
+		if death_cdf is None:
+			death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, start=start, quick=True)
+			death_cdf = get_death_cdf(death_pdf, switch=True)
 
-		death_cdf = []
-		for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
-			forecast = list(np.nanpercentile(death_pdf, percentile, axis=0))
-			death_cdf.append(forecast)
+
 		death_cdf = np.transpose(death_cdf)
 		counties_dates.append(dates)
 		counties_death_errors.append(death_cdf)

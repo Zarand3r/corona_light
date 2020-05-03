@@ -75,7 +75,7 @@ def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=Fal
 	end = len(sample_submission)
 	# for index, row in islice(sample_submission.iterrows(), start, end):
 	for index, row in sample_submission.iterrows():
-		print(f"{index} / {end}")
+		# print(f"{index} / {end}")
 		current_id = row["id"]
 		replacement = forecast_dict.pop(current_id, [current_id, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]) 
 		final_submission.append(replacement)
