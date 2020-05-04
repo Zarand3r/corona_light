@@ -19,8 +19,7 @@ def fix_nans(submission):
 	num = submission._get_numeric_data()
 	num[num < 0.1] = 0.00
 
-def fix_submission(file_path):
-	submission = pd.read_csv(file_path)
+def fix_submission(submission, file_path):
 	pop = pd.read_csv(f"{homedir}/data/us/demographics/county_populations.csv")
 	submission['Date'] = submission.id.str.rsplit("-", n = 1, expand = True)[0]
 	submission['FIPS'] = submission.id.str.rsplit("-", n = 1, expand = True)[1].astype(int)
@@ -57,8 +56,8 @@ def fix_submission(file_path):
 	temp.to_csv(file_path)
 
 
-def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=True):
-	output_path = 'formatted_prediction.csv'
+def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=False):
+	output_path = f"{homedir}" + '/models/submissions/model1/submission2.csv'
 	submission = pd.read_csv(file1, index_col=False)
 	sample_submission = pd.read_csv(file2, index_col=False)
 	fix_nans(submission)
@@ -76,12 +75,10 @@ def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=Tru
 	end = len(sample_submission)
 	# for index, row in islice(sample_submission.iterrows(), start, end):
 	for index, row in sample_submission.iterrows():
-		print(f"{index} / {end}")
+		# print(f"{index} / {end}")
 		current_id = row["id"]
 		replacement = forecast_dict.pop(current_id, [current_id, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00]) 
 		final_submission.append(replacement)
-
-	fix(submission)
 
 	if save:
 		header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
@@ -91,9 +88,9 @@ def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=Tru
 			writer.writerows(final_submission)
 
 	if fix:
-		fix_submission(output_path)
+		fix_submission(submission, output_path)
 
 	
 
 if __name__ == '__main__':
-	reformat("../model1/predictions.csv", f"{homedir}/sample_submission.csv")
+	reformat("../model1/daily_predictions2.csv", f"{homedir}/sample_submission.csv")

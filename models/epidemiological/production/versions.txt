@@ -1,0 +1,25 @@
+Version 1.0:
+============
+Error bounds did not work properly
+
+Version 2.0:
+============
+Fixed error bounding function
+Created secondary error bounding function
+If the first fails, use the second one
+Second one might be better overall actually
+Process "noncovergent" counties seperately
+	Set predictions equal to the last observed value in perptuity, with crude error calculation
+Fixed submission pipeline (formatting, converting to daily deaths)
+
+Version 2.1:
+============
+Fix moving average
+Fit Q to active cases
+
+Version 2.2
+===========
+Refine initial guesses using Italy data
+Use clustering to process "nonconvergent" counties?
+Fit on different policy regimes
+
