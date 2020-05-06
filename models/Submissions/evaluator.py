@@ -10,8 +10,10 @@ homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
-
-csv_to_score = 'checkpoint1/submission2_1.csv'
+print("scoring submission2_0_1.csv")
+csv_to_score = 'checkpoint1/submission2_0_0.csv'
+# print("scoring submission2_0_1.csv")
+# csv_to_score = 'checkpoint1/submission2_0_1.csv'
 # csv_to_score = f"{homedir}"+ '/sample_submission.csv'
 
 def get_date(x):
@@ -142,12 +144,14 @@ else:
 
 # Read some CSV for score
 df = pd.read_csv(csv_to_score).set_index('id').sort_index()
-score, county_losses = evaluate2(example[['deaths']], df)
+score = evaluate(example[['deaths']], df)
 print('Got score of {:.6f}'.format(score))
-print(county_losses['36061'])
 
-for county in county_losses:
-    if county_losses[county] > 1:
-        print(county)
+# score, county_losses = evaluate2(example[['deaths']], df)
+# print(county_losses['36061'])
+# for county in county_losses:
+#     if county_losses[county] > 1:
+#         print(county)
+
 
 

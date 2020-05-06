@@ -81,7 +81,7 @@ def get_death_cdf(death_pdf, switch=True):
 		death_cdf.append(forecast)
 
 	if switch == False:
-		if np.mean(np.array(death_cdf[-1])/np.array(death_cdf)) > 2:
+		if np.mean(np.array(death_cdf[-1])/np.array(death_cdf[0])) > 1.5:
 			print("recalculate error bounds")
 			death_cdf = None
 
@@ -498,17 +498,20 @@ def fit(data, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, 
 ###########################################################
 
 def test(weight=True, plot=False, guesses=None, start=-1, quick=False, moving=False, getbounds=False):
+	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
+	counties_dates = []
+	counties_death_errors = []
+	counties_fips = []
+	nonconvergent = []
+
 	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips = fips_key["FIPS"]
+	# fips_list = fips_key["FIPS"]
+	fips_list = [36061] #[56013, 36061, 36103] #1017
+	total = len(fips_list)
 
-	nonconvergent = []
-
-	# for county in [36059, 36001, 36103, 36061]: 56013
-	fips = [56013]
-	total = len(fips)
-	for index, county in enumerate(fips):
+	for index, county in enumerate(fips_list):
 		print(f"{index+1} / {total}")
 		county_data = loader.query(us, "fips", county)
 		if moving:
@@ -520,7 +523,7 @@ def test(weight=True, plot=False, guesses=None, start=-1, quick=False, moving=Fa
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
 		death_time = 16
 		if firstnonzero:
-			if firstnonzero > len(county_data)-7:
+			if firstnonzero > len(county_data)-7 or (county_data["deaths"].values)[-1]-(county_data["deaths"].values)[firstnonzero] == 0:
 				# add to nonconvergent counties
 				nonconvergent.append(county)
 				continue
@@ -532,17 +535,36 @@ def test(weight=True, plot=False, guesses=None, start=-1, quick=False, moving=Fa
 			# dont add to convonvergent counties, just leave blank and submission script will fill it in with all zeros
 			continue
 
-		# county_data = county_data[:-5]
 		dates = pd.to_datetime(county_data["date"].values)
-		extrapolate = (datetime.datetime(2020, 6, 30)-dates[-1])/np.timedelta64(1, 'D')
-		# expand dates using extrapolate
-		predictions, death_errors, res = fit(county_data, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, getbounds=getbounds)
+		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+		predictions, death_pdf, res = fit(county_data, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, getbounds=True)
 		if res is None:
 			# add to nonconvergent counties
 			nonconvergent.append(county)
 			continue
-		parameters = res.x
-		# cost = res.cost
+
+		death_cdf = get_death_cdf(death_pdf, switch=quick)
+		if death_cdf is None:
+			death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, start=start, quick=True)
+			death_cdf = get_death_cdf(death_pdf, switch=True)
+
+
+		death_cdf = np.transpose(death_cdf)
+		counties_dates.append(dates)
+		counties_death_errors.append(death_cdf)
+		counties_fips.append(county)
+
+	if len(nonconvergent) > 0:
+		print(nonconvergent)
+		counties_dates2, counties_death_errors2, counties_fips2 = fill_nonconvergent(nonconvergent, us, end) 
+		counties_dates = counties_dates + counties_dates2
+		for death_cdf in counties_death_errors2:
+			counties_death_errors.append(death_cdf)
+		# county_death_errors = counties_death_errors + counties_death_errors2
+		counties_fips = counties_fips + counties_fips2
+
+
+	return (np.array(counties_dates), np.array(counties_death_errors), np.array(counties_fips))
 
 
 ###########################################################
@@ -623,8 +645,8 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	counties_dates, counties_death_errors, counties_fips = submission(end, weight=True, guesses=guesses, start=-7, quick=True, moving=False)
-	# test(weight=True, plot=True, guesses=guesses, start=-7, quick=True, moving=False)
+	# counties_dates, counties_death_errors, counties_fips = submission(end, weight=True, guesses=guesses, start=-7, quick=True, moving=False)
+	test(weight=True, plot=True, guesses=guesses, start=-7, quick=False, moving=False)
 	# test(weight=True, plot=False, getbounds=False, guesses=guesses, start=-7, quick=True, moving=False)
 
 

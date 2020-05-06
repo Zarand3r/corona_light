@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from itertools import islice
 import datetime
 from datetime import timedelta
+import os
 import csv
 
 
@@ -57,7 +58,7 @@ def fix_submission(submission, file_path):
 
 
 def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=False):
-	output_path = f"{homedir}" + '/models/submissions/model1/submission2.csv'
+	output_path = os.path.dirname(file1) + '/submission.csv'
 	submission = pd.read_csv(file1, index_col=False)
 	sample_submission = pd.read_csv(file2, index_col=False)
 	fix_nans(submission)
