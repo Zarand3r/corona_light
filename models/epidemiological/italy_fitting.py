@@ -74,7 +74,7 @@ def get_errors(res, p0):
 	return perr
 
 # returns standard deviation of fitted parameters
-def get_param_errors(res, p0):
+def get_param_errors(res):
 	pfit = res.x
 	pcov = res.jac
 	pcov = np.dot(pcov.T, pcov)
@@ -216,9 +216,9 @@ def get_deaths(res, data, extrapolate=14):
 	return deaths
 
 # returns uncertainty of the fit for all variables
-def get_fit_errors(res, p0_params, p0_initial_conditions, data, extrapolate=14):
-	errors = get_param_errors(res, list(p0_params) + list(p0_initial_conditions))
-	errors[len(p0_params):] = 0
+def get_fit_errors(res, p0_params, data, extrapolate=14):
+	errors = get_param_errors(res)
+	errors[-7:] = 0
 	uncertainty = []
 	samples = 100
 	for i in range(samples):
@@ -229,7 +229,7 @@ def get_fit_errors(res, p0_params, p0_initial_conditions, data, extrapolate=14):
 	uncertainty = np.array(uncertainty)
 	return uncertainty
 
-def plot_qd(res, p0_params, p0_initial_conditions, data, extrapolate=14, boundary=None, plot_infectious=False):   
+def plot_qd(res, p0_params, data, extrapolate=14, boundary=None, plot_infectious=False):   
 	s = model_qd(res.x, data, len(data)+extrapolate)
 	P = s[:,0]
 	E = s[:,1]
@@ -268,7 +268,7 @@ def plot_qd(res, p0_params, p0_initial_conditions, data, extrapolate=14, boundar
 	p.legend.location = 'top_left'
 	bokeh.io.show(p)
 
-def plot_with_errors_sample(res, p0_params, p0_initial_conditions, data, extrapolate=14, boundary=None, plot_infectious=False):
+def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None, plot_infectious=False):
 	s = model_qd(res.x, data, len(data)+extrapolate)
 	P = s[:,0]
 	E = s[:,1]
@@ -279,7 +279,7 @@ def plot_with_errors_sample(res, p0_params, p0_initial_conditions, data, extrapo
 	R = s[:,6]
 	D = s[:,7]
 
-	uncertainty = get_fit_errors(res, p0_params, p0_initial_conditions, data, extrapolate=14)
+	uncertainty = get_fit_errors(res, p0_params, data, extrapolate=14)
 	s1 = np.percentile(uncertainty, 25, axis=0)
 	s2 = np.percentile(uncertainty, 75, axis=0)
 
@@ -339,27 +339,31 @@ def leastsq_qd(params, data, weight=False):
 	return error
 
 
-def fit(data, weight=False, plot=False, extrapolate=14):
-	params = [9e-02, 1e-01, 7e-02, 3.e-01, 4.e-01, 1e-01, 1e-01, 3e-01, 4e-01, 7e-02, 2e-04, 8e-02, 7e-03, 2e-02, 2e-04, 2e-06, 4e-03]
-	params[:] = [x/1  for x in params]
+def fit(data, guesses=None, weight=False, plot=False, extrapolate=14):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
-	# initial_conditions = [0.74, 0.24, 0.005, 4e-6, 0.0009, 0.0005, 0.0002]
-	initial_conditions = [7e-01, 2e-01, 4e-08, 7e-03, 1e-08, 3e-20, 7e-06]
 	initial_ranges = [(0,1), (0,1), (0,0.01), (0,0.01), (0,0.01), (0,0.01), (0,0.01)]
-	# guesses = params + initial_conditions
-	guesses = params+initial_conditions
 	ranges = param_ranges+initial_ranges
+	if guesses is None:
+		params = [9e-02, 1e-01, 7e-02, 3.e-01, 4.e-01, 1e-01, 1e-01, 3e-01, 4e-01, 7e-02, 2e-04, 8e-02, 7e-03, 2e-02, 2e-04, 2e-06, 4e-03]
+		initial_conditions = [7e-01, 2e-01, 4e-08, 7e-03, 1e-08, 3e-20, 7e-06]
+		guesses = params+initial_conditions
+
+	else:
+		initial_ranges = [(0.5*guesses[17],2*guesses[17]), (0.5*guesses[18],2*guesses[18]), (0.5*guesses[19],2*guesses[19]), (0.5*guesses[20],2*guesses[20]), (0.5*guesses[21],2*guesses[21]), \
+		(0, 0.3), (0.5*guesses[23],2*guesses[23])]
+		ranges = param_ranges+initial_ranges
 
 	for boundary in [len(data)]:
 		res = least_squares(leastsq_qd, guesses, args=(data[:boundary],weight), bounds=np.transpose(np.array(ranges)))
 		if plot:
-			plot_qd(res, params, initial_conditions, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True)
-			plot_with_errors_sample(res, params, initial_conditions, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False)
+			plot_qd(res, guesses, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True)
+			plot_with_errors_sample(res, guesses, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False)
 		predictions = get_deaths(res, data, extrapolate=extrapolate)
-		errors = get_fit_errors(res, params, initial_conditions, data, extrapolate=extrapolate)
+		errors = get_fit_errors(res, guesses, data, extrapolate=extrapolate)
 		death_errors = errors[:,:,-1]
 		parameters = res.x 
 		cost = res.cost
+		print(res.x)
 
 	# for boundary in [(0,30), (10,40), (20, 51)]:
 	# 	df = data[boundary[0]:boundary[1]]
@@ -379,9 +383,22 @@ def fit(data, weight=False, plot=False, extrapolate=14):
 
 def main(weight=True, plot=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
-	italy = process_data("/models/data/international/italy/covid/dpc-covid19-ita-regioni.csv", "/models/data/international/italy/demographics/region-populations.csv")
-	lombardia = loader.query(italy, "Region", "Lombardia")
-	fit(lombardia, weight=weight, plot=plot, extrapolate=14)
+	# italy = process_data("/data/international/italy/covid/dpc-covid19-ita-regioni.csv", "/models/data/international/italy/demographics/region-populations.csv")
+	italy = loader.load_data("/models/epidemiological/italy_training_data.csv")
+	lombardia = loader.query(italy, "Region", "Lombardia")[:-14]
+	# guesses = [6.69209312e-02, 1.10239913e-01, 4.33677422e-02, 3.01411969e-01,
+	# 3.55547441e-01, 1.35711130e-01, 1.87415444e-01, 3.40118459e-01,
+	# 6.54169531e-01, 5.80742686e-02, 2.66926724e-05, 1.27460914e-01,
+	# 3.14216375e-02, 1.33884397e-06, 3.95164660e-02, 5.51770694e-11,
+	# 1.27560414e-02, 6.55819545e-01, 1.66249610e-01, 8.78316719e-10,
+	# 9.72332562e-03, 1.18016076e-18, 9.50245298e-18, 7.02140155e-06]
+	guesses = [3.29142138e-01, 6.10729377e-02, 1.54971604e-01, 4.57604830e-01,
+	4.00514413e-01, 2.29936105e-02, 3.12355123e-04, 4.19042120e-02,
+	5.20538956e-01, 5.89851095e-05, 7.51938317e-07, 1.48040699e-01,
+	2.79663721e-02, 1.22173817e-01, 1.33376981e-01, 9.21393091e-08,
+	1.18451662e-03, 8.58246731e-01, 1.02247495e-01, 4.45881513e-10,
+	1.92751396e-02, 2.36032152e-18, 3.35111924e-05, 7.02140155e-06]
+	fit(lombardia, guesses = guesses, weight=weight, plot=plot, extrapolate=14)
 
 if __name__ == '__main__':
 	main()
