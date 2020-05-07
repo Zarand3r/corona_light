@@ -575,6 +575,7 @@ def submission(end, weight=True, guesses=None, start=-1, quick=False, moving=Fal
 	counties_death_errors = []
 	counties_fips = []
 	nonconvergent = []
+	parameters={}
 
 	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	# us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
@@ -635,8 +636,12 @@ def submission(end, weight=True, guesses=None, start=-1, quick=False, moving=Fal
 		# county_death_errors = counties_death_errors + counties_death_errors2
 		counties_fips = counties_fips + counties_fips2
 
+	if county in parameters.keys():
+			parameters[county]. append(res.x)
+	else:
+		parameters[county] = [res.x]
 
-	return (np.array(counties_dates), np.array(counties_death_errors), np.array(counties_fips))
+	return (np.array(counties_dates), np.array(counties_death_errors), np.array(counties_fips), nonconvergent, parameters)
 
 
 if __name__ == '__main__':

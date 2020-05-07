@@ -1002,7 +1002,7 @@ if __name__ == '__main__':
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 	# test(end, weight=True, plot=True, guesses=guesses, start=-7, quick=False, fitQ=False, moving=False)
 	# output = submission(end, regime=True, weight=True, guesses=guesses, start=-7, quick=False, fitQ=False, moving=False)
-	output = submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=False, fitQ=True, moving=False)
+	# output = submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=False, fitQ=True, moving=False)
 
 
 # Fit DI/dt to daily_cases*(total_pop/tested_pop) and weight the score much lower than 

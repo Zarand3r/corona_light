@@ -11,7 +11,7 @@ sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
 print("scoring submission2_0_1.csv")
-csv_to_score = 'checkpoint1/submission2_0_0.csv'
+csv_to_score = 'checkpoint1/submission2_0_1.csv'
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
 # csv_to_score = f"{homedir}"+ '/sample_submission.csv'

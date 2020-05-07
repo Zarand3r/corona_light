@@ -128,7 +128,10 @@ if __name__ == '__main__':
 	with open(parameter_file, 'w') as file:
 		file.write(json.dumps(parameters))
 
-
+	import pickle
+	nonconvergent_file = "nonconvergent.txt"
+	with open(nonconvergent_file, "wb") as file:
+		pickle.dump(nonconvergent, file)
 
 
 
