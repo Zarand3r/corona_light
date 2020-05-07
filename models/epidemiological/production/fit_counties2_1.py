@@ -893,8 +893,8 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 	nonconvergent = []
 	parameters = {}
 
-	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	# us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
 	total = len(fips_list)
