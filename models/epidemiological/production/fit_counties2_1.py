@@ -167,7 +167,6 @@ def get_param_errors(res, pop):
 	# rcov = rcov * scaler
 	perr = pcov * rcov
 	perr = np.sqrt(perr)
-	print(perr)
 	return perr
 
 ###########################################################
@@ -893,8 +892,8 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 	nonconvergent = []
 	parameters = {}
 
-	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	# us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
 	total = len(fips_list)
@@ -923,10 +922,12 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 
 		dates = pd.to_datetime(county_data["date"].values)
 
+
 		if regime:
 			policy_date = 737506 # get from policies.csv using county fips query
 			regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
 			if regime_change > len(county_data) - (death_time+5):
+				regime=False
 				extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 				predictions, death_pdf, res = fit(county_data, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True)
 
@@ -950,22 +951,24 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 				extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
 				predictions, death_pdf, res  = fit2(county_data1, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, fitQ=fitQ, getbounds=True)
 
-				death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
-				if death_cdf is None:
-					death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True)
-					death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 		else:
 			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 			predictions, death_pdf, res = fit(county_data, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True)
-			death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
-			if death_cdf is None:
-				death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True)
-				death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
-		
+
+
 		if res is None:
 			# add to nonconvergent counties
 			nonconvergent.append(county)
 			continue
+
+		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
+		if death_cdf is None:
+			if regime:
+				death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True)
+			else:
+				death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True)
+			death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
+		
 
 		death_cdf = np.transpose(death_cdf)
 		counties_dates.append(dates)
