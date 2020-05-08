@@ -50,7 +50,6 @@ def add_active_cases(us, data_active_cases):
 			entry = (active_cases[(active_cases.date_processed==date-difference) & (active_cases.FIPS == county)])["Active"].values
 			if len(entry) != 0:
 				active_column.append(entry[0])
-				print(entry)
 			else:
 				active_column.append(-1)
 
@@ -315,10 +314,12 @@ def estimate_bounds(res, data, fit, byslope=True):
 		mean = None
 		deviation = None
 		if len(slope_ratio) > 0:
-			# mean = sum(normalized_residuals)/len(normalized_residuals)
 			mean = 0
-			# deviation = np.std(abs(slope_ratio))
 			deviation = np.std(slope_ratio)
+			# print(deviation)
+			if deviation > 0.3:
+				deviation = 0.3
+
 
 	else:
 		residuals = res.fun
@@ -861,14 +862,14 @@ def test(end, regime=True, weight=True, plot=False, guesses=None, start=-1, quic
 
 	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
-	# fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	# fips_list = fips_key["FIPS"]
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	# fips_list = fips_key["FIPS"][0:10]
 	fips_list = [56013, 36061, 36103, 1017]
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
 		print(f"{index+1} / {total}")
-		county_data = loader.query(us, "fips", county)
+		county_data = loader.query(us, "fips", county)[:-1]
 		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 	
 		firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
@@ -968,8 +969,8 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 	nonconvergent = []
 	parameters = {}
 
-	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	# us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
 	total = len(fips_list)
@@ -1048,9 +1049,9 @@ def submission(end, regime=True, weight=True, plot=False, guesses=None, start=-1
 		counties_death_errors.append(death_cdf)
 		counties_fips.append(county)
 		if county in parameters.keys():
-			parameters[county].append(res.x)
+			parameters[county].append(list(res.x))
 		else:
-			parameters[county] = [res.x]
+			parameters[county] = [list(res.x)]
 
 	if len(nonconvergent) > 0:
 		print(f"nonconvergent: {nonconvergent}")
@@ -1081,7 +1082,7 @@ def fit_single_county(input_dict):
 	nonconvergent = None 
 	parameters = []
 
-	county_data = loader.query(us, "fips", county)
+	county_data = loader.query(us, "fips", county)[:-1]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 
 	firstnonzero = next((index for index,value in enumerate(county_data["deaths"].values) if value != 0), None)
@@ -1137,7 +1138,7 @@ def fit_single_county(input_dict):
 		# add to nonconvergent counties
 		return [county]
 
-	parameters.append(res.x)
+	parameters.append(list(res.x))
 	death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
 	if death_cdf is None:
 		if regime:
@@ -1159,8 +1160,8 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 	nonconvergent = []
 	parameters_list = {}
 
-	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	# us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
 
@@ -1203,6 +1204,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 
 	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
 	"nonconvergent": nonconvergent, "parameters": parameters_list}
+	return output_dict
 
 
 if __name__ == '__main__':
@@ -1211,8 +1213,8 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	# test(end, regime=False, weight=True, plot=True, guesses=guesses, start=-7, quick=True, fitQ=False)
-	output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
+	test(end, regime=False, weight=True, plot=True, guesses=guesses, start=-7, quick=True, fitQ=False)
+	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
 
 
 # Fit DI/dt to daily_cases*(total_pop/tested_pop) and weight the score much lower than 
