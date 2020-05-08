@@ -941,7 +941,7 @@ def test(end, regime=True, weight=True, plot=False, guesses=None, start=-1, quic
 		counties_death_errors.append(death_cdf)
 		counties_fips.append(county)
 		if county in parameters.keys():
-			parameters[county]. append(res.x)
+			parameters[county].append(res.x)
 		else:
 			parameters[county] = [res.x]
 
