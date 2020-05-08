@@ -637,7 +637,7 @@ def submission(end, weight=True, guesses=None, start=-1, quick=False, moving=Fal
 		counties_fips = counties_fips + counties_fips2
 
 	if county in parameters.keys():
-			parameters[county]. append(res.x)
+			parameters[county].append(res.x)
 	else:
 		parameters[county] = [res.x]
 
