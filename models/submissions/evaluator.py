@@ -144,14 +144,14 @@ else:
 
 # Read some CSV for score
 df = pd.read_csv(csv_to_score).set_index('id').sort_index()
-score = evaluate(example[['deaths']], df)
+# score = evaluate(example[['deaths']], df)
+score, county_losses = evaluate2(example[['deaths']], df)
 print('Got score of {:.6f}'.format(score))
-
-# score, county_losses = evaluate2(example[['deaths']], df)
-# print(county_losses['36061'])
-# for county in county_losses:
-#     if county_losses[county] > 1:
-#         print(county)
+mean = np.mean(list(county_losses.values()))
+deviation = np.std(list(county_losses.values()))
+for county in county_losses:
+    if county_losses[county] > mean+2*deviation:
+        print(county)
 
 
 

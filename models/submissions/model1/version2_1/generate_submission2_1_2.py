@@ -125,7 +125,7 @@ if __name__ == '__main__':
 	formatter2.reformat(output_file, save=True, fix=False, id="2_1_2")
 
 	import json
-	parameter_file = 'parameters2_1_2.csv'
+	parameter_file = "{homedir}/models/epidemiological/production/parameters/parameters2_1_2.csv"
 	with open(parameter_file, 'w') as file:
 		file.write(json.dumps(parameters))
 
