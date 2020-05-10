@@ -1064,7 +1064,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 		input_dict["death_metric"] = death_metric
 		data.append(input_dict)
 
-	pool = Pool(3*os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
+	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
 	results = pool.map(fit_single_county, data)
 	
 	for result in results:
