@@ -1045,7 +1045,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"][0:10]
+	fips_list = fips_key["FIPS"]
 
 	data = []
 	for county in fips_list:
