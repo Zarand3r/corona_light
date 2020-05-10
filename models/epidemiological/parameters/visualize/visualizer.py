@@ -150,7 +150,10 @@ def visualize(input_path):
 	X = np.array(list(params_dict.values()))
 	X = X[:,0,0:17]
 	counties = np.array(list(params_dict.keys()))
-	states_labels = [int(fips[0]) for fips in counties]
+	for index, county in enumerate(counties):
+		if len(county) == 4:
+			counties[index] = '0'+county
+	states_labels = [int(fips[0:2]) for fips in counties]
 	pop_labels = []
 	density_labels = []
 	for county in counties:
@@ -161,12 +164,12 @@ def visualize(input_path):
 
 	pop_labels = normalize(pop_labels)
 	density_labels = normalize(density_labels)
-	# trainPCA(X, states_labels, density_labels, savefig=input_file)
-	# trainSVD(X, counties, states_labels, density_labels, savefig=input_file)
+	trainPCA(X, states_labels, density_labels, savefig=input_file)
+	trainSVD(X, counties, states_labels, density_labels, savefig=input_file)
 	trainTSNE(X, counties, states_labels, density_labels, savefig=input_file)
 
 if __name__ == '__main__':
-	input_path = '../parameters2_1_0.csv'
+	input_path = '../old_parameters2_1_0.csv'
 	visualize(input_path)
 
 

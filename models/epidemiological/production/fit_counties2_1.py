@@ -634,6 +634,7 @@ def get_fit_errors2(res, p0_params, original, data, extrapolate=14, start=-1, qu
 				for index, death in enumerate(death_series):
 					if index >= len(data) and death <= latest_D:
 						death_series[index] = None
+				death_series = np.concatenate((original[death_metric].values[0:len(original)-death_time], death_series))
 				uncertainty.append(death_series)
 		else:
 			for i in range(samples):
@@ -948,6 +949,7 @@ def test(end, regime=True, weight=True, plot=False, guesses=None, start=-1, quic
 
 def fit_single_county(input_dict):
 	us = input_dict["us"]
+	policies = input_dict["policies"]
 	county = input_dict["county"]
 	end = input_dict["end"]
 	regime = input_dict["regime"]
@@ -980,9 +982,8 @@ def fit_single_county(input_dict):
 
 	dates = pd.to_datetime(county_data["date"].values)
 
-
 	if regime:
-		policy_date = 737506 # get from policies.csv using county fips query
+		policy_date = int(loader.query(policies, "FIPS", county)["stay at home"].values[0])
 		regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
 		if regime_change > len(county_data) - (death_time+5):
 			regime=False
@@ -1042,6 +1043,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 
 	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"][0:10]
 
@@ -1049,6 +1051,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 	for county in fips_list:
 		input_dict = {}
 		input_dict["us"] = us
+		input_dict["policies"] = policies
 		input_dict["county"] = county
 		input_dict["end"] = end
 		input_dict["regime"] = regime
@@ -1061,7 +1064,7 @@ def multi_submission(end, regime=True, weight=True, guesses=None, start=-1, quic
 		input_dict["death_metric"] = death_metric
 		data.append(input_dict)
 
-	pool = Pool(os.cpu_count())
+	pool = Pool(3*os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
 	results = pool.map(fit_single_county, data)
 	
 	for result in results:
