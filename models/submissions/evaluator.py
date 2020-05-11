@@ -10,7 +10,7 @@ homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
-csv_to_score = 'checkpoint2/submission2_1_1.csv'
+csv_to_score = 'checkpoint2/submission2_1_2.csv'
 print(f"scoring {csv_to_score}")
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
