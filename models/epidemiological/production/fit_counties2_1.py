@@ -319,8 +319,8 @@ def estimate_bounds(res, data, fit):
 		mean = 1
 		deviation = np.std(slope_ratio)
 		# print(deviation)
-		if deviation > 0.3:
-			deviation = 0.3
+		if deviation > 0.25:
+			deviation = 0.25
 
 	return (mean,deviation)
 
@@ -362,7 +362,8 @@ def get_fit_errors(res, p0_params, data, extrapolate=14, start=-1, quick=False, 
 			for i in range(samples):
 				death_series = quickie(fit, data, guess_bounds, start=start)
 				latest_D = (data[death_metric].values)[-1]
-				death_series = np.concatenate((data[death_metric].values[0:len(data)], death_series[-1*start:]))
+				# death_series = np.concatenate((data[death_metric].values[0:len(data)], death_series[-1*start:]))
+				death_series = np.concatenate((fit[0:len(data)+start, 7], death_series))
 				for index, death in enumerate(death_series):
 					if index >= len(data) and death <= latest_D:
 						death_series[index] = None
