@@ -10,7 +10,8 @@ homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
-csv_to_score = 'checkpoint2/submission.csv'
+# csv_to_score = 'checkpoint2/submission2.csv'
+csv_to_score = 'checkpoint2/old/submission2_1_0.csv'
 print(f"scoring {csv_to_score}")
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
@@ -84,7 +85,7 @@ def evaluate2(test_df, user_df):
 
     return total_loss, county_losses
 
-start_date = '2020-04-24' # First date to include in scoring
+start_date = '2020-05-10' # First date to include in scoring
 
 daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties_daily.csv')
 # daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties.csv')
@@ -150,8 +151,8 @@ print('Got score of {:.6f}'.format(score))
 mean = np.mean(list(county_losses.values()))
 deviation = np.std(list(county_losses.values()))
 for county in county_losses:
-    if county_losses[county] > mean+2*deviation:
-        print(county)
+    if county_losses[county] > mean+deviation:
+        print(f"{county} score: {county_losses[county]}")
 
 
 

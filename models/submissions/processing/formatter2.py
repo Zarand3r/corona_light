@@ -94,4 +94,4 @@ def reformat(file1, file2=f"{homedir}/sample_submission.csv", save=True, fix=Fal
 	
 
 if __name__ == '__main__':
-	reformat("../model1/daily_predictions2.csv", f"{homedir}/sample_submission.csv")
+	reformat("../model1/version2_1/daily_predictions2_1_0.csv", f"{homedir}/sample_submission.csv", id="0")

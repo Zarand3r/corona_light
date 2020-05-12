@@ -318,6 +318,8 @@ def estimate_bounds(res, data, fit):
 		mean = np.mean(slope_ratio)
 		deviation = np.std(slope_ratio)
 		# print(deviation)
+		if mean > 1.1:
+			mean = 1
 		if deviation > 0.3:
 			deviation = 0.3
 
@@ -338,6 +340,7 @@ def quickie(fit, data, guess_bounds, start=-1):
 			bound_point = previous + change
 			bound.append(bound_point)
 			previous = bound_point
+			# previous = current
 	bound = np.array(bound)
 	return bound
 
@@ -849,7 +852,7 @@ def test(end, regime=True, weight=True, plot=False, guesses=None, start=-1, quic
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"][0:10]
-	fips_list = [12071, 13099, 16069] #56013,1017
+	fips_list = [44007] #56013,1017
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1096,7 +1099,7 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	test(end, regime=False, weight=True, plot=True, guesses=guesses, start=-7, quick=True, fitQ=False, death_metric="avg_deaths")
+	test(end, regime=False, weight=True, plot=True, guesses=guesses, start=-4, quick=True, fitQ=False, death_metric="deaths")
 	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
 
 
