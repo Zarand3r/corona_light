@@ -412,23 +412,42 @@ class HiddenMarkovModel:
             states.append(state)
 
             # Sample next observation.
-            rand_var = random.uniform(0, 1)
-            next_obs = 0
+            #Repeating sampling in the case there is an overflow
+            max_obs = len(self.O[0])
+            ObsFlag = True
+            while ObsFlag:
+                repeat = False
+                rand_var = random.uniform(0, 1)
+                next_obs = 0
 
-            while rand_var > 0:
-                rand_var -= self.O[state][next_obs]
-                next_obs += 1
-
+                while rand_var > 0:
+                    rand_var -= self.O[state][next_obs]
+                    next_obs += 1
+                    if next_obs == max_obs and rand_var > 0:
+                        repeat = True
+                        rand_var = -1
+                if repeat == False:
+                    ObsFlag = False
+                    
             next_obs -= 1
             emission.append(next_obs)
 
             # Sample next state.
-            rand_var = random.uniform(0, 1)
-            next_state = 0
-
-            while rand_var > 0:
-                rand_var -= self.A[state][next_state]
-                next_state += 1
+            #Repeating sampling in the case there is an overflow
+            max_state = len(self.A[0])
+            StateFlag=True
+            while StateFlag:
+                repeat = False
+                rand_var = random.uniform(0, 1)
+                next_state = 0
+                while rand_var > 0:
+                    rand_var -= self.A[state][next_state]
+                    next_state += 1
+                    if next_state == max_obs and rand_var > 0:
+                        repeat = True
+                        rand_var = -1
+                    if repeat == False:
+                        StateFlag = False
 
             next_state -= 1
             state = next_state
