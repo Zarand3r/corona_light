@@ -1,5 +1,3 @@
-import numpy as np
-import matplotlib.pyplot as plt
 import itertools
 import os
 from multiprocessing import Pool
@@ -1071,6 +1069,7 @@ def fit_single_county(input_dict):
 			if regime_change < (death_time-5) or regime_change  > len(county_data) - (death_time+5):
 				bias = False
 				regime = False
+				regime_change = None
 
 	if regime:
 		county_data1 = county_data[:regime_change+death_time] ## experimental. Assumes first regime will carry over until death_time into future. Used to be just county_data[:regime_change]

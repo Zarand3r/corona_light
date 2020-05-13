@@ -1,19 +1,15 @@
-import numpy as np
-import matplotlib.pyplot as plt
-import itertools
 import os
+import datetime
+import itertools
 from multiprocessing import Pool
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import odeint
-from scipy.integrate import solve_ivp
 import scipy.integrate
 from sklearn.metrics import mean_squared_error
-from scipy.linalg import svd
-from scipy.optimize import least_squares
-import datetime
+from sklearn import gaussian_process
+from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
 
 import bokeh.io
 import bokeh.application
@@ -74,6 +70,83 @@ def process_data(data_covid, data_population, save=True):
 
 ###########################################################
 
+def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False, death_metric="deaths"):   
+	s = model(res.x, data, extrapolate=extrapolate)
+	P = s[:,0]
+	E = s[:,1]
+	C = s[:,2]
+	A = s[:,3]
+	I = s[:,4]
+	Q = s[:,5]
+	R = s[:,6]
+	D = s[:,7]
+
+	t = np.arange(0, len(data))
+	tp = np.arange(0, len(data)+extrapolate)
+
+	p = bokeh.plotting.figure(plot_width=1000,
+							  plot_height=600,
+							 title = ' PECAIQR Model',
+							 x_axis_label = 't (days)',
+							 y_axis_label = '# people')
+
+	if plot_infectious:
+		p.line(tp, I, color = 'red', line_width = 1, legend = 'Currently Infected')
+	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
+	p.line(tp, Q, color = 'green', line_width = 1, legend = 'Quarantined')
+	p.line(tp, R, color = 'gray', line_width = 1, legend = 'Removed')
+	p.line(tp, P, color = 'blue', line_width = 1, legend = 'Protected')
+	p.line(tp, E, color = 'yellow', line_width = 1, legend = 'Exposed')
+	p.line(tp, C, color = 'orange', line_width = 1, legend = 'Carrier')
+	p.line(tp, A, color = 'brown', line_width = 1, legend = 'Asymptotic')
+
+	# death
+	p.circle(t, data[death_metric], color ='black', legend='Real Death')
+
+	# quarantined
+	p.circle(t, data['active_cases'], color ='purple', legend='Tested Infected')
+	
+	if boundary is not None:
+		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
+		p.renderers.extend([vline])
+
+	p.legend.location = 'top_left'
+	bokeh.io.show(p)
+
+def plot_deaths(res, data, extrapolate=14, boundary=None, death_metric="deaths"):   
+	# res is results from fitting
+
+	t = np.arange(0, len(data))
+	tp = np.arange(0, len(data)+extrapolate)
+
+	p = bokeh.plotting.figure(plot_width=1000,
+							  plot_height=600,
+							 title = ' PECAIQR Model',
+							 x_axis_label = 't (days)',
+							 y_axis_label = '# people')
+
+	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
+	p.line(tp, Q, color = 'green', line_width = 1, legend = 'Quarantined')
+	p.line(tp, R, color = 'gray', line_width = 1, legend = 'Removed')
+	p.line(tp, P, color = 'blue', line_width = 1, legend = 'Protected')
+	p.line(tp, E, color = 'yellow', line_width = 1, legend = 'Exposed')
+	p.line(tp, C, color = 'orange', line_width = 1, legend = 'Carrier')
+	p.line(tp, A, color = 'brown', line_width = 1, legend = 'Asymptotic')
+
+	# death
+	p.circle(t, data[death_metric], color ='black', legend='Real Death')
+
+	# quarantined
+	p.circle(t, data['active_cases'], color ='purple', legend='Tested Infected')
+	
+	if boundary is not None:
+		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
+		p.renderers.extend([vline])
+
+	p.legend.location = 'top_left'
+	bokeh.io.show(p)
+
+
 
 
 ###########################################################
@@ -121,7 +194,7 @@ def fit_single_county(input_dict):
 
 	
 
-
+def test()
 
 
 if __name__ == '__main__':
