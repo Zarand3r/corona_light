@@ -12,7 +12,7 @@ import loader
 
 # csv_to_score = 'checkpoint2/submission2.csv'
 csv_to_score = 'model1/version2_1/submission2_1_0.csv'
-# print(f"scoring {csv_to_score}")
+print(f"scoring {csv_to_score}")
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
 
