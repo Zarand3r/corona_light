@@ -884,7 +884,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"][0:10]
-	fips_list = [44007, 42101, 6037, 36115] #56013,1017, 44007, 42101, 6037
+	fips_list = [27053] #56013,1017, 44007, 42101, 6037
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -904,7 +904,6 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 				continue
 			death_observations = (county_data['daily_deaths'].values)[firstnonzero:]
 			if list(death_observations).count(0) > len(death_observations)/2:
-				print("gottem")
 				nonconvergent.append(county)
 				continue # for fit_single_county use return [county]
 			begin = firstnonzero-death_time
@@ -924,7 +923,8 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 					residue = actual_deaths[index] - moving_deaths[index]
 					residue = residue/moving_change
 					residuals.append(residue)
-			if np.std(residuals) > 0.2:
+			if np.std(residuals) > 0.35:
+				print("gottem")
 				death_metric = "avg_deaths"
 
 		dates = pd.to_datetime(county_data["date"].values)
