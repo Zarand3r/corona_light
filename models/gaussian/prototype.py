@@ -5,11 +5,11 @@ from multiprocessing import Pool
 
 import pandas as pd
 import numpy as np
+from numpy.linalg import inv
 import matplotlib.pyplot as plt
+from matplotlib import cm
 import scipy.integrate
 from sklearn.metrics import mean_squared_error
-from sklearn import gaussian_process
-from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
 
 import bokeh.io
 import bokeh.application
@@ -62,9 +62,9 @@ def process_data(data_covid, data_population, save=True):
 	covid['Population'] = covid.apply(lambda row: loader.query(population, "FIPS", row.fips)['total_pop'], axis=1)
 	covid.dropna(subset=['fips'], inplace=True)
 	covid['fips']=covid['fips'].astype(int)
-	covid = add_active_cases(covid, "/data/us/covid/JHU_daily_US.csv")
+	# covid = add_active_cases(covid, "/data/us/covid/JHU_daily_US.csv")
 	if save:
-		covid.to_csv(f"{homedir}" + "/models/gaussian/production/us_training_data.csv")
+		covid.to_csv(f"{homedir}" + "/models/gaussian/us_training_data.csv")
 	return covid
 
 
@@ -90,21 +90,10 @@ def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False, 
 							 x_axis_label = 't (days)',
 							 y_axis_label = '# people')
 
-	if plot_infectious:
-		p.line(tp, I, color = 'red', line_width = 1, legend = 'Currently Infected')
-	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
-	p.line(tp, Q, color = 'green', line_width = 1, legend = 'Quarantined')
-	p.line(tp, R, color = 'gray', line_width = 1, legend = 'Removed')
-	p.line(tp, P, color = 'blue', line_width = 1, legend = 'Protected')
-	p.line(tp, E, color = 'yellow', line_width = 1, legend = 'Exposed')
-	p.line(tp, C, color = 'orange', line_width = 1, legend = 'Carrier')
-	p.line(tp, A, color = 'brown', line_width = 1, legend = 'Asymptotic')
-
 	# death
 	p.circle(t, data[death_metric], color ='black', legend='Real Death')
 
 	# quarantined
-	p.circle(t, data['active_cases'], color ='purple', legend='Tested Infected')
 	
 	if boundary is not None:
 		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
@@ -125,19 +114,7 @@ def plot_deaths(res, data, extrapolate=14, boundary=None, death_metric="deaths")
 							 x_axis_label = 't (days)',
 							 y_axis_label = '# people')
 
-	p.line(tp, D, color = 'black', line_width = 1, legend = 'Deceased')
-	p.line(tp, Q, color = 'green', line_width = 1, legend = 'Quarantined')
-	p.line(tp, R, color = 'gray', line_width = 1, legend = 'Removed')
-	p.line(tp, P, color = 'blue', line_width = 1, legend = 'Protected')
-	p.line(tp, E, color = 'yellow', line_width = 1, legend = 'Exposed')
-	p.line(tp, C, color = 'orange', line_width = 1, legend = 'Carrier')
-	p.line(tp, A, color = 'brown', line_width = 1, legend = 'Asymptotic')
-
-	# death
 	p.circle(t, data[death_metric], color ='black', legend='Real Death')
-
-	# quarantined
-	p.circle(t, data['active_cases'], color ='purple', legend='Tested Infected')
 	
 	if boundary is not None:
 		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
@@ -147,10 +124,26 @@ def plot_deaths(res, data, extrapolate=14, boundary=None, death_metric="deaths")
 	bokeh.io.show(p)
 
 
+def plot_gp(mu, cov, X, X_train=None, Y_train=None, samples=[]):
+    X = X.ravel()
+    mu = mu.ravel()
+    uncertainty = 1.96 * np.sqrt(np.diag(cov))
+    
+    plt.fill_between(X, mu + uncertainty, mu - uncertainty, alpha=0.1)
+    plt.plot(X, mu, label='Mean')
+    for i, sample in enumerate(samples):
+        plt.plot(X, sample, lw=1, ls='--', label=f'Sample {i+1}')
+    if X_train is not None:
+        plt.scatter(X_train, Y_train, c="black")
+    plt.legend()
+
 
 
 ###########################################################
-def test(end, death_metric="deaths"):
+def test1(end, death_metric="deaths"):
+	from sklearn import gaussian_process
+	from sklearn.gaussian_process import GaussianProcessRegressor
+	from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
 
 	counties_dates = []
 	counties_death_errors = []
@@ -158,8 +151,8 @@ def test(end, death_metric="deaths"):
 	nonconvergent = []
 	parameters = {}
 
-	us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
-	us = loader.load_data("/models/gaussian/production/us_training_data.csv")
+	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/gaussian/us_training_data.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"][0:10]
@@ -171,8 +164,160 @@ def test(end, death_metric="deaths"):
 		county_data = loader.query(us, "fips", county)
 		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 		county_data = county_data[2:]
-		print(county_data['deaths'])
-	
+
+		dates = pd.to_datetime(county_data["date"].values)
+		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+		print(extrapolate)
+
+		# X = np.arange(0, len(county_data)+extrapolate)
+		X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+		X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+		Y_train = county_data[death_metric].values
+
+
+
+		# kernel = ConstantKernel() + Matern(length_scale=1, nu=3/2) + WhiteKernel(noise_level=1)
+		# kernel = WhiteKernel(noise_level=1)
+		# gp = gaussian_process.GaussianProcessRegressor(kernel=kernel)
+		# gp.fit(X_train, Y_train)
+		# GaussianProcessRegressor(alpha=1e-10, copy_X_train=True,
+		# kernel=1**2 + Matern(length_scale=2, nu=1.5) + WhiteKernel(noise_level=1),
+		# n_restarts_optimizer=1, normalize_y=False,
+		# optimizer='fmin_l_bfgs_b', random_state=None)
+		# y_pred, sigma = gp.predict(X_pred, return_std=True)
+
+		clf = GaussianProcessRegressor(random_state=42, alpha=0.4)
+		clf.fit(X_train, Y_train)
+		y_pred, sigma = clf.predict(X_pred, return_std=True)
+
+		# Plot the function, the prediction and the 95% confidence interval based on
+		# the MSE
+		plt.figure()
+		plt.scatter(X_train, Y_train, c='b', label="Daily Deaths")
+		plt.plot(X_pred, y_pred, label="Prediction")
+		plt.fill_between(X_pred[:, 0], y_pred - sigma, y_pred + sigma,
+                 alpha=0.5, color='')
+
+		# plt.plot(x, f(x), 'r:', label=r'$f(x) = x\,\sin(x)$')
+		# plt.errorbar(X.ravel(), y, dy, fmt='r.', markersize=10, label='Observations')
+		# plt.plot(x_pred, y_pred, 'b-', label='Prediction')
+		# plt.fill(np.concatenate([x, x[::-1]]),
+		#          np.concatenate([y_pred - 1.9600 * sigma,
+		#                         (y_pred + 1.9600 * sigma)[::-1]]),
+		#          alpha=.5, fc='b', ec='None', label='95% confidence interval')
+
+		plt.legend(loc='upper left')
+		plt.show()
+		
+
+
+def kernel(X1, X2, l=1.0, sigma_f=1.0):
+    '''
+    Isotropic squared exponential kernel. Computes 
+    a covariance matrix from points in X1 and X2.
+        
+    Args:
+        X1: Array of m points (m x d).
+        X2: Array of n points (n x d).
+
+    Returns:
+        Covariance matrix (m x n).
+    '''
+    sqdist = np.sum(X1**2, 1).reshape(-1, 1) + np.sum(X2**2, 1) - 2 * np.dot(X1, X2.T)
+    return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
+
+
+
+def posterior_predictive(X_s, X_train, Y_train, l=1.0, sigma_f=1.0, sigma_y=1e-8):
+    '''  
+    Computes the suffifient statistics of the GP posterior predictive distribution 
+    from m training data X_train and Y_train and n new inputs X_s.
+    
+    Args:
+        X_s: New input locations (n x d).
+        X_train: Training locations (m x d).
+        Y_train: Training targets (m x 1).
+        l: Kernel length parameter.
+        sigma_f: Kernel vertical variation parameter.
+        sigma_y: Noise parameter.
+    
+    Returns:
+        Posterior mean vector (n x d) and covariance matrix (n x n).
+    '''
+    K = kernel(X_train, X_train, l, sigma_f) + sigma_y**2 * np.eye(len(X_train))
+    K_s = kernel(X_train, X_s, l, sigma_f)
+    K_ss = kernel(X_s, X_s, l, sigma_f) + 1e-8 * np.eye(len(X_s))
+    K_inv = inv(K)
+    
+    # Equation (4)
+    mu_s = K_s.T.dot(K_inv).dot(Y_train)
+
+    # Equation (5)
+    cov_s = K_ss - K_s.T.dot(K_inv).dot(K_s)
+    
+    return mu_s, cov_s
+
+
+def test2(end, death_metric="deaths"):
+	counties_dates = []
+	counties_death_errors = []
+	counties_fips = []
+	nonconvergent = []
+	parameters = {}
+
+	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/gaussian/us_training_data.csv")
+	policies = loader.load_data("/data/us/other/policies.csv")
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	# fips_list = fips_key["FIPS"][0:10]
+	fips_list = [36061] #56013,1017
+	total = len(fips_list)
+
+	for index, county in enumerate(fips_list):
+		print(f"{index+1} / {total}")
+		county_data = loader.query(us, "fips", county)
+		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
+		county_data = county_data[2:]
+
+		dates = pd.to_datetime(county_data["date"].values)
+		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+		print(extrapolate)
+
+		X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+		X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+		Y_train = county_data[death_metric].values
+
+		noise = 0.4
+		# Compute mean and covariance of the posterior predictive distribution
+		# mu_s, cov_s = posterior_predictive(X_pred, X_train, Y_train, sigma_y=noise)
+		# samples = np.random.multivariate_normal(mu_s.ravel(), cov_s, 3)
+		# plot_gp(mu_s, cov_s, X_pred, X_train=X_train, Y_train=Y_train, samples=samples)
+
+		params = [
+		    (3.0, 1.0, 0.2),
+		    (6.0, 1.0, 0.2),
+		    (6.0, 0.3, 0.2),
+		    (6.0, 3.0, 0.2),
+		    (6.0, 1.0, 0.05),
+		    (6.0, 1.0, 1.5),
+		]
+
+		plt.figure(figsize=(12, 8))
+
+		for i, (l, sigma_f, sigma_y) in enumerate(params):
+		    mu_s, cov_s = posterior_predictive(X_pred, X_train, Y_train, l=l, 
+		                                       sigma_f=sigma_f, 
+		                                       sigma_y=sigma_y)
+		    plt.subplot(3, 2, i + 1)
+		    plt.subplots_adjust()
+		    plt.title(f'l = {l}, sigma_f = {sigma_f}, sigma_y = {sigma_y}')
+		    plot_gp(mu_s, cov_s, X_pred, X_train=X_train, Y_train=Y_train)
+
+		plt.show()
+		plt.savefig("figures/test.png")
+
+
+
 		
 
 
@@ -194,12 +339,10 @@ def fit_single_county(input_dict):
 
 	
 
-def test()
-
-
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	test(end)
+	# test2(end)
+	test1(end, death_metric="avg_deaths")
 
 
 
