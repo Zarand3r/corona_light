@@ -878,7 +878,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	nonconvergent = []
 	parameters = {}
 
-	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
 	us_daily = loader.load_data("/data/us/covid/nyt_us_counties_daily.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
@@ -1026,7 +1026,7 @@ def fit_single_county(input_dict):
 	county_data = loader.query(us, "fips", county)
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-	county_data = county_data[2:-3]
+	county_data = county_data[2:]
 
 	firstnonzero = next((index for index,value in enumerate(county_data[death_metric].values) if value != 0), None)
 	if firstnonzero is not None:
