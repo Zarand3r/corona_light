@@ -1068,32 +1068,29 @@ def fit_single_county(input_dict):
 		else:
 			policy_date = int(policy_date.values[0])
 			regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
+			if regime_change < (death_time-5) or regime_change  > len(county_data) - (death_time+5):
+				bias = False
+				regime = False
 
 	if regime:
-		if regime_change > len(county_data) - (death_time+5):
-			regime=False
-			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-			predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		county_data1 = county_data[:regime_change+death_time] ## experimental. Assumes first regime will carry over until death_time into future. Used to be just county_data[:regime_change]
+		predictions, death_errors1, res0 = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+		first_parameters = (res0.x)[:17]
+		first_conditions = get_variables(res0, county_data1, regime_change)
+		first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[regime_change]) 
+		N = county_data['Population'].values[0]
+		first_conditions = first_conditions/N
+		parameter_guess = list(first_parameters)+list(first_conditions)
+		parameters.append(parameter_guess)
 
-		else:
-			county_data1 = county_data[:regime_change+death_time] ## experimental. Assumes first regime will carry over until death_time into future. Used to be just county_data[:regime_change]
-			predictions, death_errors1, res0 = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
-			first_parameters = (res0.x)[:17]
-			first_conditions = get_variables(res0, county_data1, regime_change)
-			first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[regime_change]) 
-			N = county_data['Population'].values[0]
-			first_conditions = first_conditions/N
-			parameter_guess = list(first_parameters)+list(first_conditions)
-			parameters.append(parameter_guess)
-
-			county_data2 = county_data[regime_change:]
-			dates2 = dates[regime_change:]
-			county_data2.reset_index(drop=True, inplace=True)
-			
-			for i in range(death_time):
-				county_data2.at[i, death_metric] *= -1
-			extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-			predictions, death_pdf, res  = fit2(county_data1, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		county_data2 = county_data[regime_change:]
+		dates2 = dates[regime_change:]
+		county_data2.reset_index(drop=True, inplace=True)
+		
+		for i in range(death_time):
+			county_data2.at[i, death_metric] *= -1
+		extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
+		predictions, death_pdf, res  = fit2(county_data1, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 	else:
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
