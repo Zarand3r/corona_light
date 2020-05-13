@@ -1042,7 +1042,7 @@ def fit_single_county(input_dict):
 	else:
 		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
 
-	if adaptive:
+	if adaptive and death_metric == "deaths":
 		actual_deaths = (county_data['deaths'].values)[firstnonzero:]
 		moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
 		residuals = []
@@ -1052,7 +1052,7 @@ def fit_single_county(input_dict):
 				residue = actual_deaths[index] - moving_deaths[index]
 				residue = residue/moving_change
 				residuals.append(residue)
-		if np.std(residuals) >= 0.35:
+		if np.std(residuals) >= 0.3:
 			death_metric = "avg_deaths"
 
 	dates = pd.to_datetime(county_data["date"].values)

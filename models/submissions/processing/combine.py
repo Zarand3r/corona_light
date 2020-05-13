@@ -141,18 +141,18 @@ def evaluator(submission, start_date):
     df = pd.read_csv(submission).set_index('id').sort_index()
     # score = evaluate(example[['deaths']], df)
     score, county_losses = evaluate2(example[['deaths']], df)
-    # print('Got score of {:.6f}'.format(score))
-    # mean = np.mean(list(county_losses.values()))
-    # deviation = np.std(list(county_losses.values()))
-    # for county in county_losses:
-    #     if county_losses[county] > mean+deviation:
-    #         print(f"{county} score: {county_losses[county]}")
+    print('Got score of {:.6f}'.format(score))
+    mean = np.mean(list(county_losses.values()))
+    deviation = np.std(list(county_losses.values()))
+    for county in county_losses:
+        if county_losses[county] > mean+deviation:
+            print(f"{county} score: {county_losses[county]}")
 
     return county_losses
 
 if __name__ == '__main__':
     start_date = '2020-05-09'
-    submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
+    submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/old/submission3_0_2.csv']
     scores = []
     
     for submission in submissions:
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
     combined.to_csv(output_file)
 
-    
+    evaluator("combined.csv", start_date)
 
 
 
