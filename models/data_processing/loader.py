@@ -6,14 +6,14 @@ from datetime import timedelta
 import git
 
 
-def load_data(filename, directory=""):
+def load_data(filename, directory="", encoding=None):
 	repo = git.Repo("./", search_parent_directories=True)
 	homedir = repo.working_dir
 	if len(directory) == 0:
 		filepath = f"{homedir}" + filename
 	else:
 		filepath = f"{homedir}" + directory + filename
-	dataframe = pd.read_csv(filepath)
+	dataframe = pd.read_csv(filepath, encoding=encoding)
 	return dataframe 
 
 # TODO make this more dynamic
@@ -24,6 +24,8 @@ def convert_dates(dataframe, timestampkey):
 
 def query(dataframe, query_key, query_val, reset=True):
 	query_data = dataframe[dataframe[query_key]==query_val]
+	if len(query_data) == 0:
+		print(f"{query_key} = {query_val} is empty")
 	if reset:
 		query_data.reset_index(drop=True, inplace=True)
 	return query_data

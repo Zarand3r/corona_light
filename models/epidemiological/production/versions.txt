@@ -1,0 +1,34 @@
+Version 1.0:
+============
+Error bounds did not work properly
+
+Version 2.0:
+============
+Fixed error bounding function
+Created secondary error bounding function
+Fixed model_beyond
+Fixed submission pipeline (formatting, converting to daily deaths)
+Combine the two error methods. This option is when quick=False
+	If the first fails, use the second one
+Second one might be better overall actually
+Process "noncovergent" counties seperately
+	Set predictions equal to the last observed value in perptuity, with crude error calculation
+
+
+Version 2.1:
+============
+Fix moving average
+Refine initial guesses using Italy data
+Fit on different policy regimess? Restrict parameters for saecond fit by making new simplified pecaiqr2
+
+
+Version 2.2
+===========
+Use clustering to process "nonconvergent" counties?
+Fit on different policy regimes
+
+
+Version 3.0
+===========
+
+Fit Q to active cases
