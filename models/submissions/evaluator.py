@@ -12,7 +12,6 @@ import loader
 
 # csv_to_score = 'checkpoint2/submission2.csv'
 csv_to_score = 'model1/version3_0/submission3_0_2.csv'
->>>>>>> d6b55c1cc505b43d9fa8b360d4e2f6637b580afd
 print(f"scoring {csv_to_score}")
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
