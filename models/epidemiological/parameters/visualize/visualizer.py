@@ -10,6 +10,7 @@ from surprise import accuracy
 from surprise import Dataset
 from surprise import Reader
 from surprise import SVD
+from surprise import SVDpp
 from surprise import NMF
 from surprise import KNNBasic
 from surprise.model_selection import cross_validate
@@ -63,7 +64,8 @@ def trainSVD(data, counties, colorlabels, sizelabels, plot=True, savefig=None): 
 	trainset = data.build_full_trainset() # Not doing cross validation, but maybe try that too
 	# algo = NMF(n_factors=2, n_epochs=100)
 	# algo = KNNBasic()
-	algo = SVD(n_factors=4, n_epochs=1000, biased=True)
+	# algo = SVD(n_factors=4, n_epochs=1000, biased=True)
+	algo = SVDpp(n_factors=10, n_epochs=1000)
 	algo.fit(trainset)
 	U = algo.pu 
 	if plot:

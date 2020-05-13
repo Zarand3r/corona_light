@@ -18,7 +18,7 @@ def fix_nans(submission):
 	submission.fillna(method='ffill', inplace=True)
 	# Do this stuff in the code that generates the error bounds instead of here
 	num = submission._get_numeric_data()
-	num[num < 0.1] = 0.00
+	num[num < 1] = 0.00
 
 def fix_submission(submission, file_path):
 	pop = pd.read_csv(f"{homedir}/data/us/demographics/county_populations.csv")

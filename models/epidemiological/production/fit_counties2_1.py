@@ -30,7 +30,7 @@ homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
-death_time = 16
+death_time = 14
 
 def add_active_cases(us, data_active_cases):
 	active_cases = loader.load_data(data_active_cases)
