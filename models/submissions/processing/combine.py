@@ -151,9 +151,9 @@ def evaluator(submission, start_date):
 	return county_losses
 
 if __name__ == '__main__':
-	start_date = '2020-05-09'
-	submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/old/submission3_0_2.csv']
-	# new_submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
+	start_date = '2020-05-11'
+	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/old/submission3_0_2.csv']
+	submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/submission3_0_0.csv', '../model1/version3_0/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
 	new_submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/submission3_0_0.csv', '../model1/version3_0/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
 	scores = []
 	
