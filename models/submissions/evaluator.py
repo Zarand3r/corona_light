@@ -84,7 +84,7 @@ def evaluate2(test_df, user_df):
 
     return total_loss, county_losses
 
-start_date = '2020-05-10' # First date to include in scoring
+start_date = '2020-05-08' # First date to include in scoring
 
 daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties_daily.csv')
 # daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties.csv')
