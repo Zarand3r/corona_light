@@ -514,8 +514,10 @@ def fill_nonconvergent(nonconvergent, data, end, fix_nonconvergent=False):
 	counties_death_errors = []
 	counties_fips = nonconvergent
 	for index, county in enumerate(nonconvergent):
+		if len(str(county)) == 4:
+			county = int('0'+str(county))
 		county_data = loader.query(data, "fips", county)
-		deaths = county_data["daily_deaths"].values
+		deaths = county_data["deaths"].values
 		dates = pd.to_datetime(county_data["date"].values)
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 
@@ -924,8 +926,8 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	us_daily = loader.load_data("/data/us/covid/nyt_us_counties_daily.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	# fips_list = fips_key["FIPS"][0:10]
-	fips_list = [42101] #56013,1017, 44007, 42101, 6037 27053
+	# fips_list = fips_key["FIPS"]
+	fips_list = [1071] #56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1032,7 +1034,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 
 	if len(nonconvergent) > 0:
 		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us, end) 
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end) 
 		counties_dates = counties_dates + counties_dates_non
 		for death_cdf in counties_death_errors_non:
 			counties_death_errors.append(death_cdf)
@@ -1212,7 +1214,7 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 
 	if len(nonconvergent) > 0:
 		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us, end, fix_nonconvergent=fix_nonconvergent) 
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, fix_nonconvergent=fix_nonconvergent) 
 		counties_dates = counties_dates + counties_dates_non
 		for death_cdf in counties_death_errors_non:
 			counties_death_errors.append(death_cdf)
