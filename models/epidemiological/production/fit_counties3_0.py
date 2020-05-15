@@ -315,7 +315,7 @@ def estimate_bounds(res, data, fit):
 	fit_previous = fit[:,7][firstnonzero:-1]
 	fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
 	slope_ratio = np.array(actual_slope)/np.array(fit_slope)
-	slope_ratio = reject_outliers(slope_ratio)
+	slope_ratio = reject_outliers(slope_ratio, m=3)
 	if len(slope_ratio) > 0:
 		# mean = 0
 		# deviation = np.std(abs(slope_ratio))
@@ -927,7 +927,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [1071] #56013,1017, 44007, 42101, 6037 27053
+	fips_list = [36059] #56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -966,7 +966,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 					residue = actual_deaths[index] - moving_deaths[index]
 					residue = residue/moving_change
 					residuals.append(residue)
-			if np.std(residuals) > 0.35:
+			if np.std(residuals) > 0.30:
 				print("gottem")
 				death_metric = "avg_deaths"
 
@@ -1063,6 +1063,7 @@ def fit_single_county(input_dict):
 	getbounds = input_dict["getbounds"]
 	adaptive = input_dict["adaptive"]
 	death_metric = input_dict["death_metric"]
+	cutoff = input_dict["cutoff"]
 	nonconvergent = None 
 	parameters = []
 
@@ -1070,6 +1071,8 @@ def fit_single_county(input_dict):
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 	county_data = county_data[2:]
+	if cutoff is not None:
+		county_data = county_data[:cutoff]
 
 	if len(county_data) == 0:
 		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
@@ -1162,7 +1165,7 @@ def fit_single_county(input_dict):
 	
 
 
-def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", fix_nonconvergent=True):
+def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1196,6 +1199,7 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 		input_dict["getbounds"] = getbounds
 		input_dict["adaptive"] = adaptive
 		input_dict["death_metric"] = death_metric
+		input_dict["cutoff"] = cutoff
 		data.append(input_dict)
 
 	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
@@ -1232,24 +1236,8 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	test(end, bias=True, regime=True, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
 	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
-
-
-# Fit DI/dt to daily_cases*(total_pop/tested_pop) and weight the score much lower than 
-
-
-# i changed range of Q initial condition to (0, 0.3) dont forget to change back!
-
-# Tasks
-# =========
-# MAKE SUBMISSION SCRIPT
-# Make object oriented (dont have to keep calculating model(res.x, params, data) for plotting and error bounds)
-# Fit Q to active cases
-# Fix equations so variables add up to N
-# Dynamically find regime_change from policies spreadsheet
-# Submission file
-# fit for moving windows of time and see how parameters change. Use random forest regressor from non covid data to find mapping function to target parameter values
 
 
 
