@@ -203,8 +203,8 @@ def pecaiqr(dat, t, params, N, max_t):
 	Q = dat[5]
 	R = dat[6]
 
-	dPdt = (- ((a_1+a_2)*C*P)/N) + (-a_3*P + b_4*E)*(N/(P+E))
-	dEdt = (- (b_1 * A + b_2 * I) * E / N) + b_3*C + (a_3*P - b_4*E)*(N/(P+E))
+	dPdt = (- ((a_1+a_2)*C*P)/N)
+	dEdt = (- (b_1 * A + b_2 * I) * E / N) + b_3*C
 	dCdt = -(g_a + g_i)*C + ((b_1 * A + b_2 * I) * E / N) - b_3*C
 	dAdt = (a_1 * C * P) / N + g_a*C - (r_a + del_a + th)*A
 	dIdt = (a_2 * C * P) / N + g_i*C - ((r_i+d_i)+del_i)*I+th*A
@@ -925,7 +925,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"][0:10]
-	fips_list = [42101] #56013,1017, 44007, 42101, 6037 27053
+	fips_list = [36061] #56013,1017, 44007, 42101, 6037 27053 42101
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1067,7 +1067,7 @@ def fit_single_county(input_dict):
 	county_data = loader.query(us, "fips", county)
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-	county_data = county_data[2:-3]
+	county_data = county_data[2:]
 
 	if len(county_data) == 0:
 		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
@@ -1230,7 +1230,7 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	test(end, bias=True, regime=True, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
 	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
 
 
