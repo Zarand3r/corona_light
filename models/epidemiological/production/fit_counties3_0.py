@@ -509,23 +509,32 @@ def test_convergence(data_length, pop, predictions):
 		converge = False
 	return converge	
 
-def fill_nonconvergent(nonconvergent, data, end):
+def fill_nonconvergent(nonconvergent, data, end, fix_nonconvergent=False):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = nonconvergent
 	for index, county in enumerate(nonconvergent):
 		county_data = loader.query(data, "fips", county)
-		deaths = county_data["deaths"].values
+		deaths = county_data["daily_deaths"].values
 		dates = pd.to_datetime(county_data["date"].values)
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 
 		death_cdf = []
-		latest_D = deaths[-1]
-		for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
-			bound = (1 + percentile/200)*latest_D
-			predictions = [bound for i in range(int(extrapolate))]
-			forecast = list(np.concatenate((deaths, predictions)))
-			death_cdf.append(forecast)
+		if fix_nonconvergent:
+			latest_D = deaths[-1]
+			for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
+				# bound = (1 + percentile/200)*latest_D
+				bound = np.mean(deaths)
+				predictions = [bound for i in range(int(14))]
+				predictions = predictions + [0 for i in range(int(extrapolate-14))]
+				forecast = list(np.concatenate((deaths, predictions)))
+				death_cdf.append(forecast)
+		else:
+			for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
+				predictions = [0 for i in range(int(extrapolate))]
+				forecast = list(np.concatenate((deaths, predictions)))
+				death_cdf.append(forecast)
+
 		death_cdf = np.transpose(death_cdf)
 		counties_dates.append(dates)
 		counties_death_errors.append(death_cdf)
@@ -877,6 +886,7 @@ def leastsq_qd2(params, data, weight=False, fitQ=False, death_metric="deaths"):
 	return d_error
 
 
+# TODO: The initial ranges from the guesses hav error ValueError: Each lower bound must be strictly less than each upper bound. for philadelphia county 42101
 def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, death_metric="deaths"):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
 	initial_ranges = [(0.9*guesses[17],1.1*guesses[17]), (0.9*guesses[18],1.1*guesses[18]), (0.9*guesses[19],1.1*guesses[19]), (0.9*guesses[20],1.1*guesses[20]), (0.9*guesses[21],1.1*guesses[21]), \
@@ -944,7 +954,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 		else:
 			continue # dont add to convonvergent counties, just leave blank and submission script will fill it in with all zeros
 
-		if adaptive:
+		if adaptive and death_metric=="deaths":
 			actual_deaths = (county_data['deaths'].values)[firstnonzero:]
 			moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
 			residuals = []
@@ -1058,6 +1068,9 @@ def fit_single_county(input_dict):
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 	county_data = county_data[2:]
+
+	if len(county_data) == 0:
+		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
 
 	firstnonzero = next((index for index,value in enumerate(county_data[death_metric].values) if value != 0), None)
 	if firstnonzero is not None:
@@ -1197,14 +1210,13 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 				counties_fips.append(county)
 				parameters_list[county] = parameters
 
-	if fix_nonconvergent:
-		if len(nonconvergent) > 0:
-			print(f"nonconvergent: {nonconvergent}")
-			counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us, end) 
-			counties_dates = counties_dates + counties_dates_non
-			for death_cdf in counties_death_errors_non:
-				counties_death_errors.append(death_cdf)
-			counties_fips = counties_fips + counties_fips_non
+	if len(nonconvergent) > 0:
+		print(f"nonconvergent: {nonconvergent}")
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us, end, fix_nonconvergent=fix_nonconvergent) 
+		counties_dates = counties_dates + counties_dates_non
+		for death_cdf in counties_death_errors_non:
+			counties_death_errors.append(death_cdf)
+		counties_fips = counties_fips + counties_fips_non
 
 	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
 	"nonconvergent": nonconvergent, "parameters": parameters_list}
@@ -1218,8 +1230,7 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	# test(end, bias=True, regime=True, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
-	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, regime=True, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
 	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
 
 
