@@ -11,7 +11,7 @@ sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
 # csv_to_score = 'checkpoint2/submission2.csv'
-csv_to_score = 'model1/version3_0/submission3_0_2.csv'
+csv_to_score = 'model1/version3_0/old/submission3_0_2.csv'
 print(f"scoring {csv_to_score}")
 # print("scoring submission2_0_1.csv")
 # csv_to_score = 'checkpoint1/submission2_0_1.csv'
@@ -84,7 +84,7 @@ def evaluate2(test_df, user_df):
 
     return total_loss, county_losses
 
-start_date = '2020-05-13' # First date to include in scoring
+start_date = '2020-05-11' # First date to include in scoring
 
 daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties_daily.csv')
 # daily_df = pd.read_csv(f"{homedir}" + '/data/us/covid/nyt_us_counties.csv')
