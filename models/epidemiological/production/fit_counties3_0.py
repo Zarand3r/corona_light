@@ -1067,7 +1067,7 @@ def fit_single_county(input_dict):
 	county_data = loader.query(us, "fips", county)
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-	county_data = county_data[2:-3]
+	county_data = county_data[2:]
 
 	if len(county_data) == 0:
 		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
