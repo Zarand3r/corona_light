@@ -152,14 +152,15 @@ def evaluator(submission, start_date):
 
 if __name__ == '__main__':
 	start_date = '2020-05-07'
-	submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/old/submission3_0_2.csv']
-	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/submission3_0_0.csv', '../model1/version3_0/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
-	new_submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/submission3_0_0.csv', '../model1/version3_0/submission3_0_1.csv', '../model1/version3_0/submission3_0_2.csv']
+	latest_date = '2020-05-14'
+	submissions = ['../epidemiological/version3_0/old/submission3_0_0.csv', '../epidemiological/version3_0/old/submission3_0_1.csv', '../epidemiological/version3_0/old/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
+	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_0/submission3_0_0.csv', '../epidemiological/version3_0/submission3_0_1.csv', '../epidemiological/version3_0/submission3_0_2.csv']
+	new_submissions = ['../epidemiological/version3_0/submission3_0_0.csv', '../epidemiological/version3_0/submission3_0_1.csv', '../epidemiological/version3_0/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
 	scores = []
 	
 	for submission in submissions:
-	    score = evaluator(submission, start_date)
-	    scores.append(score)
+		score = evaluator(submission, start_date)
+		scores.append(score)
 
 	# baseline = scores[0]
 	# optimal_submission = {}
@@ -185,53 +186,58 @@ if __name__ == '__main__':
 	baseline = scores[0]
 	optimal_submission = {}
 	for county in list(baseline.keys()):
-	    best = baseline[county]
-	    best_index = 0
-	    for index, score in enumerate(scores):
-	        if score[county] < best:
-	            best = score[county]
-	            best_index = index
-	    optimal_submission[county] = best_index
+		best = baseline[county]
+		best_index = 0
+		for index, score in enumerate(scores):
+			if score[county] < best:
+				best = score[county]
+				best_index = index
+			if best_index == 3:
+				print(county)
+		optimal_submission[county] = best_index
 
 
 	submission_files = []
 	for submission in new_submissions:
-	    submission_file = pd.read_csv(submission, index_col=False)
-	    submission_files.append(submission_file)
+		submission_file = pd.read_csv(submission, index_col=False)
+		submission_files.append(submission_file)
 
 	baseline_file = submission_files[0]
 	ultimate_submission = []
 
 	total = len(baseline_file)
 	for index, row in baseline_file.iterrows():
-	    print(f"{index+1} / {total}")
-	    county = row["id"].split('-')[-1]
-	    optimal_file_index = optimal_submission[county]
-	    optimal_file = submission_files[optimal_file_index]
-	    ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
+		print(f"{index+1} / {total}")
+		county = row["id"].split('-')[-1]
+		optimal_file_index = optimal_submission[county]
+		if optimal_file_index == 3:
+			date = row["id"][0:10]
+			day = date.split('-')[-1]
+			month = date.split('-')[-2]
+			if int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
+				optimal_file_index = 0
+		optimal_file = submission_files[optimal_file_index]
+		ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
 		
 
-	output_file = f'{homedir}/models/submissions/processing/' + 'combined.csv'
+	output_file = f'{homedir}/models/submissions/processing/combined.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
-	    writer = csv.writer(submission_file, delimiter=',')
-	    writer.writerow(header)
-	    writer.writerows(ultimate_submission)
+		writer = csv.writer(submission_file, delimiter=',')
+		writer.writerow(header)
+		writer.writerows(ultimate_submission)
 
-	combined = pd.read_csv(output_file)
+	combined = pd.read_csv(output_file, index_col=False)
 	combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
-	combined.to_csv(output_file)
-
-	evaluator("combined.csv", start_date)
+	combined.to_csv(output_file, index=False)
 
 
-	start_date = '2020-05-10'
-	evaluator("combined.csv", start_date)
+	evaluator("combined.csv", latest_date)
 
 
 
 
-	# new_submissions = [f"{homedir}"+ '/sample_submission.csv', '../model1/version3_0/old/submission3_0_0.csv', '../model1/version3_0/old/submission3_0_1.csv', '../model1/version3_0/old/moving_submission3_0_2.csv']
+	# new_submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_0/old/submission3_0_0.csv', '../epidemiological/version3_0/old/submission3_0_1.csv', '../epidemiological/version3_0/old/moving_submission3_0_2.csv']
 	# submission_files = []
 	# for submission in new_submissions:
 	# 	submission_file = pd.read_csv(submission, index_col=False)
