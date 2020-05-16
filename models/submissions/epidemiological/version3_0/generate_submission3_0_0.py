@@ -111,7 +111,7 @@ if __name__ == '__main__':
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
-	output_file = f'{homedir}/models/submissions/model1/version3_0/' + 'predictions3_0_0.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_0/' + 'predictions3_0_0.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
