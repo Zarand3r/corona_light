@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
-
-
 import pandas as pd
 import numpy as np
 import os
@@ -11,18 +8,12 @@ import datetime
 from HMM import unsupervised_HMM
 from HMM import supervised_HMM
 from HMM_helper import sample_sentence
-
-
-# In[ ]:
-
-
+import json
+from hmmlearn import hmm
 import git
 import sys
 repo = git.Repo("./", search_parent_directories=True)
 homedir = repo.working_dir
-
-
-# In[ ]:
 
 
 def makeHMMUnSupData(Input, colname, fipsname):
@@ -33,10 +24,6 @@ def makeHMMUnSupData(Input, colname, fipsname):
         temp = list(Input[Input[fipsname] == fips][colname])
         Output.append(temp)
     return Output
-
-
-# In[ ]:
-
 
 def makeHMMmap(Output):
     #Takes in output of makeHMMUnSupData and transforms data into list from 0 to D-1, where D is the number of unique
@@ -57,10 +44,6 @@ def makeHMMmap(Output):
         HMMOutput.append(templs)
         templs = []
     return [Map,RMap,HMMOutput]
-
-
-# In[ ]:
-
 
 def makeHMMSupData(UnSupData):
     #Takes list of lists of time series data from makeHMMUnSupData and makes it into data with X and Y
@@ -85,20 +68,71 @@ def makeHMMSupData(UnSupData):
         tempY = []   
     return [X,Y]
 
+def makeX(Data, DTW, cluster_col, cluster_num, fipsname, deathsname):
+    #Takes in the dataset, cluster column and number, and gives out the deaths info in this cluster
+    #In the form able to be processed by hmmlearn's HMM modules    
+    fips = list(DTW[DTW[cluster_col] == cluster_num]['FIPS'])
+    Rows = Data[Data[fipsname].isin(fips)]
+    RawData = makeHMMUnSupData(Rows, deathsname, fipsname)
+    #RawData = [a[0] for a in RawData]
+    temp = []
+    lengths = []
+    for i in RawData:
+        temp.extend(i)
+        lengths.append(len(i))
+    temp = np.array(temp).reshape(-1,1)
+    return [temp, lengths]
 
-# In[2]:
+#Dataframes of deaths
+NYT_F = pd.read_csv(f"{homedir}/models/HMM_Work/NYT_daily_Filled.csv", index_col=0)
+NYT_W = pd.read_csv(f"{homedir}/models/HMM_Work/NYT_daily_Warp.csv", index_col=0)
+JHU = pd.read_csv(f"{homedir}/models/HMM_Work/JHU_daily.csv", index_col=0)
+#list of lists of deaths data
+with open('NYT_daily_Warp_Death.txt') as f:
+    NYT_daily_Warp_Death = json.load(f)
+with open('NYT_daily_Death_Filled.txt') as g:
+    NYT_daily_Death_Filled = json.load(g)
+with open('JHU_daily_death.txt') as h:
+    JHU_daily_death = json.load(h)
+#DTW Based Clusters
+DTW_Clusters = pd.read_csv(f"{homedir}/models/HMM_Work/DTW_Clustering.csv", index_col=0)
+
+#Training data for the models
+test = makeX(NYT_F, DTW_Clusters, 'NYT_W_Z_L', 3, 'fips', "deaths")
+
+#A bunch of models
+
+model1 = hmm.GaussianHMM(n_components=4, covariance_type="full")
+model2 = hmm.GMMHMM(n_components=4, n_mix=1, covariance_type="full")
+model3 = hmm.GaussianHMM(n_components=10, covariance_type="full")
+# model4 = hmm.GMMHMM(n_components=10, n_mix=2, covariance_type="full")
+# model5 = hmm.GaussianHMM(n_components=20, covariance_type="full")
+# model6 = hmm.GMMHMM(n_components=15, n_mix=3, covariance_type="full")
+# model7 = hmm.GaussianHMM(n_components=4, covariance_type="full", algorithm='map')
+# model8 = hmm.GMMHMM(n_components=4, n_mix=2, covariance_type="full", algorithm='map')
+# model9 = hmm.GaussianHMM(n_components=10, covariance_type="full", algorithm='map')
+# model10 = hmm.GMMHMM(n_components=10, n_mix=2, covariance_type="full", algorithm='map')
+# model11 = hmm.GaussianHMM(n_components=20, covariance_type="full", algorithm='map')
+# model12 = hmm.GMMHMM(n_components=15, n_mix=3, covariance_type="full", algorithm='map')
+
+model1.fit(test[0],test[1])
+model2.fit(test[0],test[1])
+model3.fit(test[0],test[1])
 
 
-#Differenced Daily Death Data
-NYT_daily = pd.read_csv(f"{homedir}/data/us/covid/nyt_us_counties_daily.csv")
-NYT_daily = NYT_daily.drop(columns=['county','state']).sort_values(['fips','date']).reset_index(drop=True)
-NYT_daily['fips'] = NYT_daily.fips.astype(int)
-NYT_daily['date'] = pd.to_datetime(NYT_daily['date'])
-NYT_daily['id'] = NYT_daily.fips.astype(str).str.cat(NYT_daily.date.astype(str), sep=', ')
+model3 = hmm.GaussianHMM(n_components=4, covariance_type="full")
+model3.fit(test[0],test[1])
+model3.score(test[0],test[1])
 
 
-# In[10]:
+model1.get_stationary_distribution()
+model1.score_samples(test[0],test[1])
 
+X1 = [0.5, 1.0, -1.0, 0.42, 0.24]
+X2 = [2.4, 4.2, 0.5, -0.24]
+X = np.concatenate([X1, X2]).reshape(-1,1)
+lengths = [len(X1), len(X2)]
+hmm.GaussianHMM(n_components=2).fit(X, lengths)
 
 #This is just a testing file so far, because our actual HMM clusterings are not available
 #Maknig basic list of list data from the direct NYT Data (no clustering we just take the whole dataset)
@@ -108,25 +142,14 @@ DailyDeathUnSup = makeHMMUnSupData(NYT_daily, 'deaths', 'fips')
 #Making supervised X and Y datasets
 DailyDeathSup = makeHMMSupData(DailyDeathUnSupHMM)
 
-
-# In[11]:
-
-
 #using the superviesed testing data, and making a supervised HMM from this 
 SupHMM = supervised_HMM(DailyDeathSup[0],DailyDeathSup[1])
 SupHMM
-
-
-# In[13]:
-
 
 test = np.zeros(14)
 for j in range(1000): #This generates a sample of length 14, with a starting state of 2, 
     test += np.array(sample_sentence(SupHMM, DailyDeathMap, 14, 2))#state of 2 means 2 people died in the county yesterday
 print(test/1000)
-
-
-# In[ ]:
 
 
 

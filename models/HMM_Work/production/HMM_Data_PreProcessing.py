@@ -52,7 +52,6 @@ def cumtoDaily(Data, colname):
     return ls
 
 
-
 #Cumulative Death Data
 NYT_tot = pd.read_csv(f"{homedir}/data/us/covid/nyt_us_counties.csv")
 NYT_tot.loc[NYT_tot["county"]=='New York City', "fips"]=36061
@@ -80,6 +79,8 @@ FirstDay = min(NYT_daily.date.unique())
 LastDay = max(NYT_daily.date.unique())
 
 
+
+
 #Making a time-warping of NYT daily data, so each county has a value at the starting day of 2020-01-21
 # and then a final value at the most recent day
 NYT_daily_Warp = NYT_daily
@@ -92,7 +93,11 @@ for fips in NYT_daily.fips.unique():
     if LastDay not in rows.date.unique():
         NYT_daily_Warp = NYT_daily_Warp[NYT_daily_Warp['fips'] != fips]
 NYT_daily_Warp = NYT_daily_Warp.sort_values(['fips','date']).reset_index(drop=True)
+NYT_daily_Warp.to_csv('NYT_daily_Warp.csv')
+
+
 NYT_daily_Warp_Death = makeHMMUnSupData(NYT_daily_Warp, 'deaths', 'fips')
+
 
 #This is a list of all the counties and dates
 County_List = list(NYT_daily.fips.unique())
@@ -102,17 +107,22 @@ CL, DL = pd.core.reshape.util.cartesian_product([County_List, Date_List])
 BaseFrame = pd.DataFrame(dict(fips=CL, date=DL)).sort_values(['fips','date']).reset_index(drop=True)
 BaseFrame['id'] = BaseFrame.fips.astype(str).str.cat(BaseFrame.date.astype(str), sep=', ')
 
+
 #Making frame of all deaths at all dates to properly do DTW clustering
 NYT_daily_Filled = BaseFrame.join(NYT_daily.set_index('id'), on='id', how='outer', lsuffix='',rsuffix='_x').sort_values(['fips', 'date']).drop(columns=['fips_x','date_x']).fillna(0).drop_duplicates(subset=['fips','date']).reset_index(drop=True)
+NYT_daily_Filled.to_csv('NYT_daily_Filled.csv')
+
 
 #List of lists of daily death count for each county, starting 1/23/20, ending most recent date.
 NYT_daily_Death_Filled = makeHMMUnSupData(NYT_daily_Filled, 'deaths', 'fips')
+
 
 #JHU Data
 JHU_tot = pd.read_csv(f"{homedir}/data/us/covid/JHU_daily_US.csv").sort_values(['FIPS','Date'])
 FIPSlist = JHU_tot.FIPS.unique()
 Datelist = JHU_tot.Date.unique()
 Datepair = [Datelist[0],Datelist[-1]]
+
 
 #Getting rid of unneded fips code in the list of total codes
 for fips in FIPSlist:
@@ -124,15 +134,12 @@ for fips in FIPSlist:
 JHU_tot = JHU_tot.sort_values(['FIPS','Date']).reset_index(drop=True)
 
 
-d = {'FIPS': JHU_tot['FIPS'], 'Date' : JHU_tot['Date'], 'Confirmed' : monotonicCol(JHU_tot,'Confirmed'), 'Deaths' : monotonicCol(JHU_tot,'Deaths'),'Active' : monotonicCol(JHU_tot,'Active'),         'Recovered' : monotonicCol(JHU_tot,'Recovered')}
-#Monotonically increaasing transformation of JHU_tot
+d = {'FIPS': JHU_tot['FIPS'], 'Date' : JHU_tot['Date'], 'Confirmed' : monotonicCol(JHU_tot,'Confirmed'), 'Deaths' : monotonicCol(JHU_tot,'Deaths'),'Active' : monotonicCol(JHU_tot,'Active'), 'Recovered' : monotonicCol(JHU_tot,'Recovered')}
 JHU_mono = pd.DataFrame(data=d)
-
-
-d = {'FIPS': JHU_mono['FIPS'], 'Date' : JHU_mono['Date'], 'Confirmed' : cumtoDaily(JHU_mono,'Confirmed'), 'Deaths' : cumtoDaily(JHU_mono,'Deaths'),'Active' : cumtoDaily(JHU_mono,'Active'),         'Recovered' : cumtoDaily(JHU_mono,'Recovered')}
+d = {'FIPS': JHU_mono['FIPS'], 'Date' : JHU_mono['Date'], 'Confirmed' : cumtoDaily(JHU_mono,'Confirmed'), 'Deaths' : cumtoDaily(JHU_mono,'Deaths'),'Active' : cumtoDaily(JHU_mono,'Active'), 'Recovered' : cumtoDaily(JHU_mono,'Recovered')}
 #Daily changing data based on monotonically transformed data
 JHU_daily = pd.DataFrame(data=d)
-
+JHU_daily.to_csv('JHU_Daily.csv')
 #List of lists of daily death count for each county, starting 3/23/20, ending most recent date.
 JHU_daily_death = makeHMMUnSupData(JHU_daily, 'Deaths', 'FIPS')
 
@@ -144,7 +151,6 @@ f.close()
 g = open('NYT_daily_Death_Filled.txt', 'w')
 json.dump(NYT_daily_Death_Filled, g)
 g.close()
-
 
 h = open('JHU_daily_death.txt', 'w')
 json.dump(JHU_daily_death, h)

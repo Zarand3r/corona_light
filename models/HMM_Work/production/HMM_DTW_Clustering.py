@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+
 import pandas as pd
 import numpy as np
 import os
@@ -33,7 +34,6 @@ def znormalize_nozeros(ls):
     else:
         return (ls - np.mean(ls))/np.std(ls)
 
-
 def noinf(arr):
     #Removes inf from list of lists
     newarr = []
@@ -43,7 +43,6 @@ def noinf(arr):
         newarr.append(x)
     return newarr
 
-
 def nonzerofips(arr):
     #Takes in dataset, returns indices of data that do not have a list with all 0's
     ind = []
@@ -52,6 +51,25 @@ def nonzerofips(arr):
             ind.append(i)
     return ind
 
+def makeZ(Data):
+    #Creates DTW linkage matrix using DTAIdistance and scipy
+    distance = dtw.distance_matrix_fast(Data,compact=True)
+    Z = linkage(distance, method='complete')
+    return Z
+
+def fillnonzero(OrigData, clusters):
+    #Takes a clustering from a dataset with nonzero entries.
+    #Adds to that clustering another cluster for all 0's
+    n = 0
+    newclusters = []
+    for i in range(len(OrigData)):
+        if np.std(OrigData[i]) == 0:
+            newclusters.append(0)
+        else:
+            newclusters.append(clusters[n])
+            n += 1
+    return newclusters
+
 
 with open('NYT_daily_Warp_Death.txt') as f:
     NYT_daily_Warp_Death = json.load(f)
@@ -59,6 +77,15 @@ with open('NYT_daily_Death_Filled.txt') as g:
     NYT_daily_Death_Filled = json.load(g)
 with open('JHU_daily_death.txt') as h:
     JHU_daily_death = json.load(h)
+    
+NYT_F = pd.read_csv(f"{homedir}/models/HMM_Work/production/NYT_daily_Filled.csv", index_col=0)
+NYT_W = pd.read_csv(f"{homedir}/models/HMM_Work/production/NYT_daily_Warp.csv", index_col=0)
+JHU = pd.read_csv(f"{homedir}/models/HMM_Work/production/JHU_daily.csv", index_col=0)
+
+#Original dataset, making into list of np arrays
+NYT_daily_Warp_Death = [np.array(x) for x in NYT_daily_Warp_Death]
+NYT_daily_Death_Filled = [np.array(x) for x in NYT_daily_Death_Filled]
+JHU_daily_death = [np.array(x) for x in JHU_daily_death]
 
 
 #Z normalization of our dataset
@@ -78,52 +105,73 @@ Series_JHU_nozeros = [znormalize_nozeros(x) for x in JHU_daily_death]
 Series_JHU_nozeros =  [x for x in Series_JHU_nozeros if x is not None]
 
 
+#We generate the many clusters needed for analysis
+#Suffix "O": uses original unedited data
+#"Z": uses z-normalized data, "N": uses z-normalized data, with all 0's entries in individual cluster
+#"T": represents Tight, means a lower nubmer of clusters used
+#"L": represents Loose, a higher number of clusters used
+JHU_Cluster_Size = [2,2,6,2,6]
 
-#This is supposed to be a clustering based on using DTAIDistance, which is a library that can first do DTW distance 
-#Calcultaions between time series, and from that create a hierarchical clustering
-#This is a small example, check the Big file for all the cases
-model3 = clustering.LinkageTree(dtw.distance_matrix_fast, {})
-cluster_idx = model3.fit(Series_JHU)
-#It seems like no clustering occurs, check doculmentation for DTAIdistance
+Z_JHU_O = makeZ(JHU_daily_death)
+Z_JHU_Z = makeZ(Series_JHU)
+Z_JHU_N = makeZ(Series_JHU_nozeros)
 
+JHU_O = fcluster(Z_JHU_O, JHU_Cluster_Size[0], criterion ='maxclust')
+JHU_Z_T = fcluster(Z_JHU_Z, JHU_Cluster_Size[1], criterion ='maxclust')
+JHU_Z_L = fcluster(Z_JHU_Z, JHU_Cluster_Size[2], criterion ='maxclust')
+JHU_N_T = fillnonzero(Series_JHU,fcluster(Z_JHU_N, JHU_Cluster_Size[3], criterion ='maxclust'))
+JHU_N_L = fillnonzero(Series_JHU,fcluster(Z_JHU_N, JHU_Cluster_Size[4], criterion ='maxclust'))
 
-#This is an example of trying to first do the DTW distance matrix creation
-#Using simple the time series data, gives distance matrix
-distance_JHU = dtw.distance_matrix_fast(Series_JHU)
-#one large issue i am having with this is that this distance matrix is not symmetric, so idk how to pass it into 
-#another hierachical clustering function because i cant find one that takes a non symmetric distance matrix
+ClustersJHU = pd.DataFrame(data=JHU.FIPS.unique(),columns=['FIPS'])
+ClustersJHU['JHU_Orig'] = JHU_O
+ClustersJHU['JHU_Z_T'] = JHU_Z_T
+ClustersJHU['JHU_Z_L'] = JHU_Z_L
+ClustersJHU['JHU_N_T'] = JHU_N_T
+ClustersJHU['JHU_N_L'] = JHU_N_L
 
-#This takes the distance matrrix and does scipy hierachical clustering
-#But this is actually wrong because linkage takes in a flattened distance array or a 2-d array of observation vectors, not 
-# a 2d distance matrix
-Z_JHU = linkage(noinf(distance_JHU), 'complete')
-dn_JHU = dendrogram(Z_JHU)
-#Shows the dendrogram of the resulting clusetering
+NYT_F_Cluster_Size = [2,2,5,2,5,9]
 
+Z_NYT_F_O = makeZ(NYT_daily_Death_Filled)
+Z_NYT_F_Z = makeZ(Series_NYT_F)
+Z_NYT_F_N = makeZ(Series_NYT_F_nozeros)
 
-#This is a plot of the elbow method to help determine what number of clusters should be used
-last = Z_JHU[-10:, 2]
-last_rev = last[::-1]
-idxs = np.arange(1, len(last) + 1)
-plt.plot(idxs, last_rev)
+NYT_F_O = fcluster(Z_NYT_F_O, NYT_F_Cluster_Size[0], criterion ='maxclust')
+NYT_F_Z_T = fcluster(Z_NYT_F_Z, NYT_F_Cluster_Size[1], criterion ='maxclust')
+NYT_F_Z_L = fcluster(Z_NYT_F_Z, NYT_F_Cluster_Size[2], criterion ='maxclust')
+NYT_F_N_T = fillnonzero(Series_NYT_F,fcluster(Z_NYT_F_N, NYT_F_Cluster_Size[3], criterion ='maxclust'))
+NYT_F_N_L = fillnonzero(Series_NYT_F,fcluster(Z_NYT_F_N, NYT_F_Cluster_Size[4], criterion ='maxclust'))
+NYT_F_N_L_L = fillnonzero(Series_NYT_F,fcluster(Z_NYT_F_N, NYT_F_Cluster_Size[5], criterion ='maxclust'))
 
-acceleration = np.diff(last, 2)  # 2nd derivative of the distances
-acceleration_rev = acceleration[::-1]
-
-fig = plt.figure(figsize=(25, 10))
-plt.plot(idxs[:-2] + 1, acceleration_rev)
-plt.savefig("figures/hierarchy.png")
-plt.show()
-k = acceleration_rev.argmax() + 2  # if idx 0 is the max of this we want 2 clusters
-print("clusters:", k)
-
-#Clustering ids
-# clusters_JHU = fcluster(Z_JHU, 5, criterion='maxclust')
-
-#if you try to look at these clusters you see that consecutive fips have all the same cluster
-#you get large blocks as the clusters, probably because the distance matrix input in the linkage line is incorrect
-
-
+ClustersNYT_F = pd.DataFrame(data=NYT_F.fips.unique(),columns=['FIPS'])
+ClustersNYT_F['NYT_F_Orig'] = NYT_F_O
+ClustersNYT_F['NYT_F_Z_T'] = NYT_F_Z_T
+ClustersNYT_F['NYT_F_Z_L'] = NYT_F_Z_L
+ClustersNYT_F['NYT_F_N_T'] = NYT_F_N_T
+ClustersNYT_F['NYT_F_N_L'] = NYT_F_N_L
+ClustersNYT_F['NYT_F_N_L_L'] = NYT_F_N_L_L
 
 
+NYT_W_Cluster_Size = [2,2,7,2,7]
+
+Z_NYT_W_O = makeZ(NYT_daily_Warp_Death)
+Z_NYT_W_Z = makeZ(Series_NYT_W)
+Z_NYT_W_N = makeZ(Series_NYT_W_nozeros)
+
+NYT_W_O = fcluster(Z_NYT_W_O, NYT_W_Cluster_Size[0], criterion ='maxclust')
+NYT_W_Z_T = fcluster(Z_NYT_W_Z, NYT_W_Cluster_Size[1], criterion ='maxclust')
+NYT_W_Z_L = fcluster(Z_NYT_W_Z, NYT_W_Cluster_Size[2], criterion ='maxclust')
+NYT_W_N_T = fillnonzero(Series_NYT_W,fcluster(Z_NYT_W_N, NYT_W_Cluster_Size[3], criterion ='maxclust'))
+NYT_W_N_L = fillnonzero(Series_NYT_W,fcluster(Z_NYT_W_N, NYT_W_Cluster_Size[4], criterion ='maxclust'))
+
+ClustersNYT_W = pd.DataFrame(data=NYT_W.fips.unique(),columns=['FIPS'])
+ClustersNYT_W['NYT_W_Orig'] = NYT_W_O
+ClustersNYT_W['NYT_W_Z_T'] = NYT_W_Z_T
+ClustersNYT_W['NYT_W_Z_L'] = NYT_W_Z_L
+ClustersNYT_W['NYT_W_N_T'] = NYT_W_N_T
+ClustersNYT_W['NYT_W_N_L'] = NYT_W_N_L
+
+
+AllClusters = ClustersJHU.join(ClustersNYT_F.set_index('FIPS'), on='FIPS', how='outer').join(ClustersNYT_W.set_index('FIPS'), on='FIPS', how='outer').sort_values('FIPS')
+
+AllClusters.to_csv('DTW_Clustering.csv')
 
