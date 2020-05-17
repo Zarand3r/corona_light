@@ -1,34 +1,175 @@
-Version 1.0:
-============
-Error bounds did not work properly
+PECAIQR Probabilistic Model: 
+============================
+Overview:
+Protected: People who cannot be infected except by Carriers
+Exposed: Non-diseased people who can be diseased by Asymptomatics & Infectious
+Carrier: Exposed people who get disease on “hands”, can spread disease to Protected
+Asymptomatic: Diseased people with no visible symptoms, can make Exposed into Carrier, can become Quarantined or Infectious
+Infectious: Diseased people with visible symptoms, can make Exposed into Carrier, can become Quarantined or Removed, have a chance of death upon removal
+Quarantine: Diseased people who cannot spread disease to anyone, can become Removed, have chance of death upon removal
+Removed: People who recover/die from disease, assumed cannot contract/spread disease after
+Dead: Count of people who are dead from Infectious or Removed
+Differential Equations
+P + E + C + A + I + Q + R  = N
+0 ≤ D ≤ R
+dP/dt + dE/dt + dC/dt + dA/dt + dI/dt + dQ/dt +  dR/dt = 0
+dP/dt = -(1+2)CP/N + (-3P+ 4E)NP+E  
+dE/dt = -(1A+2I)E/N + 3C + (3P- 4E)NP+E 
+dC/dt = -(A+I)C + (1A+2I)E/N -3C
+dA/dt = 1CP/N + AC - (rA + A + )A 
+dI/dt = 2CP/N + IC - ((rI + dI) + I)I + A
+dQ/dt = AA + II - (rQ + dQ)Q
+dR/dt = rAA + (rI + dI)I + (rQ + dQ)Q
+dD/dt = dII + dQQ 
+
+Parameters:
+1: Chance/rate of Protected becoming Asymptomatic from Carrier
+2: Chance/rate of Protected becoming Infectious from Carrier
+3: Chance/rate of Protected becoming Exposed
+1: Chance/rate of Exposed becoming Carrier from Asymptomatic
+2: Chance/rate of Exposed becoming Carrier from Infectious
+3: Chance/rate of Carrier returning back to Exposed
+4: Chance/rate of Exposed becoming Protected
+A: Chance/rate of Carrier becoming Asymptomatic
+I: Chance/rate of Carrier becoming Infectious
+ : Chance/rate of Asymptomatic becoming Infectious
+A: Chance/rate of Asymptomatic becoming Quarantined 
+I: Chance/rate of Infectious becoming Quarantined 
+rA: Chance/rate of Asymptomatic becoming Removed & Recovering
+rI: Chance/rate of Infectious becoming Removed & Recovering
+rQ: Chance/rate of Quarantined becoming Removed & Recovering
+dI: Chance/rate of Infectious becoming Removed & Dying
+dQ: Chance/rate of Quarantined becoming Removed & Dying
+
+Version 1.0
+===========
+Process Data:
+Obtain death and case statistics from nyt_counties.csv
+Map county populations from demographics data onto the corresponding fips codes
+Fit to deaths
+Use Least squares minimization on the results of numerical integration from OdeInt
+Decided not to fit I to case statistics because the case reporting is likely a gross underestimate due to testing limitations
+Weigh more recent data points in the training set more, as they are more indicative of the current state of the pandemic, in the case that parameters change over time. 
+Use a geometric series to weigh, so that the total sum of the weights is N in the limit of large N, where N is the number of training data points 
+Confidence Intervals
+Calculated error bounds by finding parameter variance from residual variance using covariance matrix of residuals and the Jacobian around the fitted parameters.
+Sampled 100 parameter sets from a normal distribution of parameters, and performed numerical integration on each set
+Combined the results for all parameter sets to obtain a CDF
+Performance
+Poor, did not account for edge cases, specifically counties with bad data
+Outputted cumulative predictions instead of daily predictions
+INCLUDE FIGURES!
 
 Version 2.0:
 ============
-Fixed error bounding function
+Error bounding functions
+Fixed primary error bounding function
+Like in Version 1, calculated parameter variance and generated a confidence interval by performing numerical integration on each of the 100 sets of parameters, yielding 100 different curves around the best fit
+Improvement allowing user to designate the “pivot point”
+Initial date at which to set initial conditions of the sampled parameter fits
+It is better practice to place the pivot just before the last data point.
 Created secondary error bounding function
+Extract the residuals, create normalized statistics by mapping to the scaler ratios of residual over actual value. 
+Remove outliers 
+The scalar ratio of residual over actual value is poor in the small number limit
+Use the mean and standard deviation to create a normal distribution
+Then, for each time t in the extrapolated prediction fit, generate a confidence range of 100 points
+For each time multiply the fitted prediction by a scalar sampled normal the normal distribution and add to the PDF 
+Repeat 100 times
+Trim the PDF by eliminating future predictions that fall below the last value of observed death.
+Cumulative deaths cannot decrease
+Note that this is only necessary because we are fitting on a cumulative variable, and there is a risk that the trimming will make the PDF empty some times, if the predicted fit is much lower than the last observed death (FIX THIS!!!!)
+However, there is a benefit to fitting on cumulative deaths and converting to daily rather than fitting on just daily deaths, because we don’t have as many issues with autocorrelation effects, as the volatility in the data is greatly reduced implicitly by the fact that cumulative statistics are the sum of all daily statistics.  
+Get the discrete 10, 20, 30, 40, 50, 60, 70, 80, 90 confidence intervals CDF by sampling the PDF
 Fixed model_beyond
+
+
 Fixed submission pipeline (formatting, converting to daily deaths)
 Combine the two error methods. This option is when quick=False
-	If the first fails, use the second one
+If the first fails, use the second one
 Second one might be better overall actually
-Process "noncovergent" counties seperately
-	Set predictions equal to the last observed value in perptuity, with crude error calculation
-
+Process "non-convergent" counties separately
+Set predictions equal to the last observed value in perpetuity, with crude error calculation
+These counties include those with too few deaths or insufficient reporting of death statistics
+Performance
+Include Figures!
 
 Version 2.1:
 ============
-Fix moving average
-Refine initial guesses using Italy data
-Fit on different policy regimess? Restrict parameters for saecond fit by making new simplified pecaiqr2
-
+Further developed moving average option (work in progress)
+Fit on different policy regimes
+Before the policy regime
+Find the policy regime date R from the policies data
+Starting from the parameter guesses, fit on deaths up to the date X+R, where X is the average time till expiration.
+Find a precise estimate for X by calculating the offset between the infection and death curve peaks using Italy (work in progress)
+After the policy regime
+Extract the fitted parameters from the first fit, as well as the variables from the first fit at date R, and use these as the parameter and initial conditions guesses of the second fit
+Restrict the range of the second fit’s initial conditions to a neighborhood around this guess
+Goal: further restrict parameters for second fit by making simplified pecaiqr2 with fewer parameters and initial conditions (the rest are set constant as the values from the previous fit)
+Fit to Active Cases
+Obtain active case statistics from the johns hopkins reporting
+Fit Q to active cases
+Operating with the assumption that people who test positive are either forced to quarantine by going to a hospital, or voluntarily quarantine themselves at home
+Of course, this is also an underestimate, as there are likely many people who get sick and self quarantine but don’t get counted in the active cases reporting
+Issues:
+Fitting on Q makes the fit on D bad. These two data sources seem to be incompatible, likely because active cases is poorly reported
+However, if we assume the active case reporting is correct, the results do make sense.
+For many counties, although the deaths are leveling out, the active cases is still increasing, and the result of fitting on both is that the deaths increase as well, which is what we would desire
+Explore the possibility of using a reduce weight for the fit for Q to active cases
+Improve second error bounding function
+Generate a PDF of deaths around the best fit prediction.
+For each time t in the training range, compute the difference in “slope” between the fit and the actual data.
+The slope in the fit is simply the current predicted death minus the previous death on the fit curve
+For the slope in the actual data, to mitigate the dominating effects of outliers, we find the slope as the difference between consecutive points of the moving average (window of 3 days) instead.
+Define a normal distribution of slope ratios
+For each time t in the training data, find the ratio of the actual (moving average) slope and the fit slope, and fill a list of these ratios
+Remove outliers 
+The ratios are unrealistically high in the small number limit
+Find the mean and standard deviation of the distribution as the mean and (sample) standard deviation of the ratios list
+Then, for each time t in the extrapolated prediction fit, generate a confidence range of 100 points
+Find the slope at the extrapolated time as the predicted death minus the predicted death at the previous time.
+Multiply this slope by a random scaler sampled from the normal distribution of ratios. Call this varied slope s
+Multiply the predicted death at the previous time t-1 in the fit by (1+s) and add this as a point in the PDF at time t. 
+Repeat 100 times
+Trimmed the PDF by eliminating future predictions that fall below the last value of observed death.
+Cumulative deaths cannot decrease
+Use this error bounding function if the first one, based on varying parameters using covariance matrix of residuals and jacobian of fitted parameters, fails to create convergent or reasonably tight confidence interval
+Get the discrete 10, 20, 30, 40, 50, 60, 70, 80, 90 confidence intervals CDF by sampling the PDF
+IMPLEMENT MULTITHREADING
+Performance
+Include Figures!
 
 Version 2.2
 ===========
-Use clustering to process "nonconvergent" counties?
-Fit on different policy regimes
-
+Refine initial guesses using Italy data (work in progress)
+Correctly deal with non-convergent counties
+The current PECAIQR model fitting converges well for 1034 counties. The remaining counties (from the total of 3007 counties) either do not have any reporting, and are not included in the training data, or they are included in the training data, but due to bad reporting or lack of data, the curve fits do not converge on realistic results.
+So far, we have dealt with these counties by simply sacrificing them by setting their daily death predictions to zero
+However, it may be possible to make more realistic predictions by skipping over the fitting step using clustering methods.
+We can hope to cluster the fitted parameter sets for all convergent counties, to see if there is any clear clustering corresponding to noncovid, county-specific features such as demographics, population density, health statistics, etc.
+PCA
+Plot first two principal components against each other
+SVD
+Plot first two columns of the left U matrix against each other
+T-distributed Stochastic Neighbor Embedding (t-SNE)
+Visualize with different perplexities
+Once we establish proof of these clusterings in the parameter space, we can then guess the parameters.
+We can do this in two different ways
+Method 1: cluster the counties by these same non-covid features that correlate with clusters in the parameter space.
+For each non-convergent county, find the nearest convergent county in the cluster, then use its parameters to substitute in the fitting.
+Method 2: perform some sort of regression from the noncovid features onto the parameters space, to find an explicit function
+For each non-convergent county, use this to calculate the parameters to substitute in the fitting 
+Create option to fit dI/dt instead of I
+Do this by modifying the PECAIQR function to take dI/dt as a fixed parameter instead of I for each function call
+Do this by returning dI/dt from the modeling function, which is called in the least squares function
+In the least squares function, fit dI/dt from the modeling function to  (#daily positive)/(#daily tested)
+This is a more accurate statistid
 
 Version 3.0
 ===========
+Adaptive parameter
+Plotting daily deaths
+Fixed discontinuity in conversion from cumulative to daily
 
-Fit Q to active cases
+
+

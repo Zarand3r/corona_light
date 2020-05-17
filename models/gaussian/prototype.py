@@ -26,7 +26,7 @@ homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
 
-death_time = 16
+death_time = 14
 
 def add_active_cases(us, data_active_cases):
 	active_cases = loader.load_data(data_active_cases)
@@ -70,38 +70,6 @@ def process_data(data_covid, data_population, save=True):
 
 ###########################################################
 
-def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False, death_metric="deaths"):   
-	s = model(res.x, data, extrapolate=extrapolate)
-	P = s[:,0]
-	E = s[:,1]
-	C = s[:,2]
-	A = s[:,3]
-	I = s[:,4]
-	Q = s[:,5]
-	R = s[:,6]
-	D = s[:,7]
-
-	t = np.arange(0, len(data))
-	tp = np.arange(0, len(data)+extrapolate)
-
-	p = bokeh.plotting.figure(plot_width=1000,
-							  plot_height=600,
-							 title = ' PECAIQR Model',
-							 x_axis_label = 't (days)',
-							 y_axis_label = '# people')
-
-	# death
-	p.circle(t, data[death_metric], color ='black', legend='Real Death')
-
-	# quarantined
-	
-	if boundary is not None:
-		vline = bokeh.models.Span(location=boundary, dimension='height', line_color='black', line_width=3)
-		p.renderers.extend([vline])
-
-	p.legend.location = 'top_left'
-	bokeh.io.show(p)
-
 def plot_deaths(res, data, extrapolate=14, boundary=None, death_metric="deaths"):   
 	# res is results from fitting
 
@@ -138,6 +106,56 @@ def plot_gp(mu, cov, X, X_train=None, Y_train=None, samples=[]):
     plt.legend()
 
 
+###########################################################
+
+
+
+def kernel(X1, X2, l=1.0, sigma_f=1.0):
+    '''
+    Isotropic squared exponential kernel. Computes 
+    a covariance matrix from points in X1 and X2.
+        
+    Args:
+        X1: Array of m points (m x d).
+        X2: Array of n points (n x d).
+
+    Returns:
+        Covariance matrix (m x n).
+    '''
+    sqdist = np.sum(X1**2, 1).reshape(-1, 1) + np.sum(X2**2, 1) - 2 * np.dot(X1, X2.T)
+    return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
+
+
+
+def posterior_predictive(X_s, X_train, Y_train, l=1.0, sigma_f=1.0, sigma_y=1e-8):
+    '''  
+    Computes the suffifient statistics of the GP posterior predictive distribution 
+    from m training data X_train and Y_train and n new inputs X_s.
+    
+    Args:
+        X_s: New input locations (n x d).
+        X_train: Training locations (m x d).
+        Y_train: Training targets (m x 1).
+        l: Kernel length parameter.
+        sigma_f: Kernel vertical variation parameter.
+        sigma_y: Noise parameter.
+    
+    Returns:
+        Posterior mean vector (n x d) and covariance matrix (n x n).
+    '''
+    K = kernel(X_train, X_train, l, sigma_f) + sigma_y**2 * np.eye(len(X_train))
+    K_s = kernel(X_train, X_s, l, sigma_f)
+    K_ss = kernel(X_s, X_s, l, sigma_f) + 1e-8 * np.eye(len(X_s))
+    K_inv = inv(K)
+    
+    # Equation (4)
+    mu_s = K_s.T.dot(K_inv).dot(Y_train)
+
+    # Equation (5)
+    cov_s = K_ss - K_s.T.dot(K_inv).dot(K_s)
+    
+    return mu_s, cov_s
+
 
 ###########################################################
 def test1(end, death_metric="deaths"):
@@ -148,8 +166,6 @@ def test1(end, death_metric="deaths"):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = []
-	nonconvergent = []
-	parameters = {}
 
 	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/gaussian/us_training_data.csv")
@@ -211,59 +227,10 @@ def test1(end, death_metric="deaths"):
 		
 
 
-def kernel(X1, X2, l=1.0, sigma_f=1.0):
-    '''
-    Isotropic squared exponential kernel. Computes 
-    a covariance matrix from points in X1 and X2.
-        
-    Args:
-        X1: Array of m points (m x d).
-        X2: Array of n points (n x d).
-
-    Returns:
-        Covariance matrix (m x n).
-    '''
-    sqdist = np.sum(X1**2, 1).reshape(-1, 1) + np.sum(X2**2, 1) - 2 * np.dot(X1, X2.T)
-    return sigma_f**2 * np.exp(-0.5 / l**2 * sqdist)
-
-
-
-def posterior_predictive(X_s, X_train, Y_train, l=1.0, sigma_f=1.0, sigma_y=1e-8):
-    '''  
-    Computes the suffifient statistics of the GP posterior predictive distribution 
-    from m training data X_train and Y_train and n new inputs X_s.
-    
-    Args:
-        X_s: New input locations (n x d).
-        X_train: Training locations (m x d).
-        Y_train: Training targets (m x 1).
-        l: Kernel length parameter.
-        sigma_f: Kernel vertical variation parameter.
-        sigma_y: Noise parameter.
-    
-    Returns:
-        Posterior mean vector (n x d) and covariance matrix (n x n).
-    '''
-    K = kernel(X_train, X_train, l, sigma_f) + sigma_y**2 * np.eye(len(X_train))
-    K_s = kernel(X_train, X_s, l, sigma_f)
-    K_ss = kernel(X_s, X_s, l, sigma_f) + 1e-8 * np.eye(len(X_s))
-    K_inv = inv(K)
-    
-    # Equation (4)
-    mu_s = K_s.T.dot(K_inv).dot(Y_train)
-
-    # Equation (5)
-    cov_s = K_ss - K_s.T.dot(K_inv).dot(K_s)
-    
-    return mu_s, cov_s
-
-
 def test2(end, death_metric="deaths"):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = []
-	nonconvergent = []
-	parameters = {}
 
 	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
 	us = loader.load_data("/models/gaussian/us_training_data.csv")
@@ -318,25 +285,72 @@ def test2(end, death_metric="deaths"):
 
 
 
-		
-
-
 def fit_single_county(input_dict):
+	#put the logic to fit a single county here
+	#all the data should be in input_dict
 	us = input_dict["us"]
 	policies = input_dict["policies"]
 	county = input_dict["county"]
 	end = input_dict["end"]
-	regime = input_dict["regime"]
-	weight = input_dict["weight"]
-	guesses = input_dict["guesses"]
-	start= input_dict["start"]
-	quick = input_dict["quick"]
-	fitQ = input_dict["fitQ"]
-	getbounds = input_dict["getbounds"]
-	death_metric = input_dict["death_metric"]
-	nonconvergent = None 
-	parameters = []
+	
 
+	county_data = loader.query(us, "fips", county)
+	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
+	county_data = county_data[2:]
+
+	dates = pd.to_datetime(county_data["date"].values)
+	extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+
+	X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+	X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+	Y_train = county_data[death_metric].values
+
+
+	# Try using object oriented design. 
+	# Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
+	# To get results (death_cdf), call its main function below, and return them in the tuple
+
+
+
+	death_cdf = []
+	return (dates, death_cdf, county) 
+
+def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", fix_nonconvergent=True):
+	counties_dates = []
+	counties_death_errors = []
+	counties_fips = []
+
+	# This first line regenerates the us_training_data.csv with new data pulled from upstream. It is usually commented out because I dont want to run it every time I test this function.
+	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/gaussian/us_training_data.csv")
+	policies = loader.load_data("/data/us/other/policies.csv")
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	fips_list = fips_key["FIPS"][0:10]
+
+	data = []
+	for index, county in enumerate(fips_list):
+		input_dict = {}
+		input_dict["us"] = us
+		input_dict["policies"] = policies
+		input_dict["county"] = county
+		input_dict["end"] = end
+		data.append(input_dict)
+	
+	pool = Pool(os.cpu_count())
+	results = pool.map(fit_single_county, data)
+	
+	for result in results:
+		if result is not None:
+			if len(result) == 1:
+				nonconvergent.append(result[0]) 
+			else:
+				(dates, death_cdf, county) = result
+				counties_dates.append(dates)
+				counties_death_errors.append(death_cdf)
+				counties_fips.append(county)
+
+	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips)}
+	return output_dict
 	
 
 if __name__ == '__main__':
