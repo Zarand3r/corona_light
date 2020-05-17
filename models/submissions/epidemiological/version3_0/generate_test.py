@@ -113,10 +113,10 @@ def main(start, end, guesses, bias=False, regime=False, weight=True, start=0, qu
 
 	formatter2.reformat(output_file, save=True, fix=False, id=sub_id)
 
-	import json
-	parameter_file = f"{homedir}/models/epidemiological/parameters/parameters{sub_id}.csv"
-	with open(parameter_file, 'w') as file:
-		file.write(json.dumps(parameters))
+	# import json
+	# parameter_file = f"{homedir}/models/epidemiological/parameters/parameters{sub_id}.csv"
+	# with open(parameter_file, 'w') as file:
+	# 	file.write(json.dumps(parameters))
 
 
 if __name__ == '__main__':
