@@ -292,7 +292,6 @@ def fit_single_county(input_dict):
 	policies = input_dict["policies"]
 	county = input_dict["county"]
 	end = input_dict["end"]
-	
 
 	county_data = loader.query(us, "fips", county)
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
@@ -315,7 +314,7 @@ def fit_single_county(input_dict):
 	death_cdf = []
 	return (dates, death_cdf, county) 
 
-def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", fix_nonconvergent=True):
+def multi_submission(end):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = []
@@ -341,13 +340,10 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 	
 	for result in results:
 		if result is not None:
-			if len(result) == 1:
-				nonconvergent.append(result[0]) 
-			else:
-				(dates, death_cdf, county) = result
-				counties_dates.append(dates)
-				counties_death_errors.append(death_cdf)
-				counties_fips.append(county)
+			(dates, death_cdf, county) = result
+			counties_dates.append(dates)
+			counties_death_errors.append(death_cdf)
+			counties_fips.append(county)
 
 	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips)}
 	return output_dict
