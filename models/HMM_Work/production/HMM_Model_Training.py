@@ -83,74 +83,84 @@ def makeX(Data, DTW, cluster_col, cluster_num, fipsname, deathsname):
     temp = np.array(temp).reshape(-1,1)
     return [temp, lengths]
 
+def makeHMM(X):
+    #Takes in data from makeX, and uses the Elbow method to determine the optimal number of 
+    #states needed in the HMM, and returns the HMM with that optimal number of states
+    scores = []
+    Flag = True
+    val = 999
+    for i in range(1,31):
+        tempmodel = hmm.GaussianHMM(n_components=i, covariance_type="full")
+        #Tries to make the model fit, can fail if data not diverse enough
+        try:
+            if Flag:
+                tempmodel.fit(X[0],X[1])
+                scores.append(tempmodel.score(X[0],X[1]))
+                if i > 10:
+                    if scores[-1] < scores[-2]:
+                        Flag = False
+                print(i)
+        except:
+            val = i - 1
+            Flag = False
+    #If the data only accepts less than 4 states to work, we chose the max number of states to describe it
+    if val < 5:
+        return hmm.GaussianHMM(n_components = val, covariance_type="full").fit(X[0],X[1])
+    else:
+    #We do an elbow method otherwise
+        n = 0
+        #finding number of negative entries
+        for j in scores:
+            if j < 0:
+                n += 1
+        #gettin index of best point by elbow method (using first derivative)
+        print(scores)
+        ind = np.argmax(np.diff(scores)[(n + 1):]/scores[(n + 2):])
+        return hmm.GaussianHMM(n_components = ind + n + 3, covariance_type="full").fit(X[0],X[1])
+
+
+def makeHMMlist(Data, DTW, cluster_col):
+    labels = np.sort(DTW[cluster_col].dropna().unique())
+    HMM_list = [0] * len(labels)
+    n = 0
+    for i in labels:
+        print(i)
+        X = makeX(Data, DTW, cluster_col, i)
+        HMM_list[n] = makeHMM(X)
+        n += 1
+    return [HMM_list, labels]
+
+
+
 #Dataframes of deaths
 NYT_F = pd.read_csv(f"{homedir}/models/HMM_Work/NYT_daily_Filled.csv", index_col=0)
 NYT_W = pd.read_csv(f"{homedir}/models/HMM_Work/NYT_daily_Warp.csv", index_col=0)
+NYT_F = NYT_F.rename(columns={'fips':'FIPS','deaths':'Deaths'})
+NYT_W = NYT_W.rename(columns={'fips':'FIPS','deaths':'Deaths'})
 JHU = pd.read_csv(f"{homedir}/models/HMM_Work/JHU_daily.csv", index_col=0)
 #list of lists of deaths data
 with open('NYT_daily_Warp_Death.txt') as f:
-    NYT_daily_Warp_Death = json.load(f)
+    NYT_daily_Warp_Death = simplejson.load(f)
 with open('NYT_daily_Death_Filled.txt') as g:
-    NYT_daily_Death_Filled = json.load(g)
+    NYT_daily_Death_Filled = simplejson.load(g)
 with open('JHU_daily_death.txt') as h:
-    JHU_daily_death = json.load(h)
+    JHU_daily_death = simplejson.load(h)
 #DTW Based Clusters
 DTW_Clusters = pd.read_csv(f"{homedir}/models/HMM_Work/DTW_Clustering.csv", index_col=0)
 
-#Training data for the models
-test = makeX(NYT_F, DTW_Clusters, 'NYT_W_Z_L', 3, 'fips', "deaths")
+JHU_Z_T_HMMs = makeHMMlist(JHU, DTW_Clusters, 'JHU_Z_T')
+JHU_Z_L_HMMs = makeHMMlist(JHU, DTW_Clusters, 'JHU_Z_L')
+JHU_N_T_HMMs = makeHMMlist(JHU, DTW_Clusters, 'JHU_N_T')
+JHU_N_L_HMMs = makeHMMlist(JHU, DTW_Clusters, 'JHU_N_L')
 
-#A bunch of models
+NYT_F_Z_T_HMMs = makeHMMlist(NYT_F, DTW_Clusters, 'NYT_F_Z_T')
+NYT_F_Z_L_HMMs = makeHMMlist(NYT_F, DTW_Clusters, 'NYT_F_Z_L')
+NYT_F_N_T_HMMs = makeHMMlist(NYT_F, DTW_Clusters, 'NYT_F_N_T')
+NYT_F_N_L_HMMs = makeHMMlist(NYT_F, DTW_Clusters, 'NYT_F_N_L')
+NYT_F_N_L_L_HMMs = makeHMMlist(NYT_F, DTW_Clusters, 'NYT_F_N_L_L')
 
-model1 = hmm.GaussianHMM(n_components=4, covariance_type="full")
-model2 = hmm.GMMHMM(n_components=4, n_mix=1, covariance_type="full")
-model3 = hmm.GaussianHMM(n_components=10, covariance_type="full")
-# model4 = hmm.GMMHMM(n_components=10, n_mix=2, covariance_type="full")
-# model5 = hmm.GaussianHMM(n_components=20, covariance_type="full")
-# model6 = hmm.GMMHMM(n_components=15, n_mix=3, covariance_type="full")
-# model7 = hmm.GaussianHMM(n_components=4, covariance_type="full", algorithm='map')
-# model8 = hmm.GMMHMM(n_components=4, n_mix=2, covariance_type="full", algorithm='map')
-# model9 = hmm.GaussianHMM(n_components=10, covariance_type="full", algorithm='map')
-# model10 = hmm.GMMHMM(n_components=10, n_mix=2, covariance_type="full", algorithm='map')
-# model11 = hmm.GaussianHMM(n_components=20, covariance_type="full", algorithm='map')
-# model12 = hmm.GMMHMM(n_components=15, n_mix=3, covariance_type="full", algorithm='map')
-
-model1.fit(test[0],test[1])
-model2.fit(test[0],test[1])
-model3.fit(test[0],test[1])
-
-
-model3 = hmm.GaussianHMM(n_components=4, covariance_type="full")
-model3.fit(test[0],test[1])
-model3.score(test[0],test[1])
-
-
-model1.get_stationary_distribution()
-model1.score_samples(test[0],test[1])
-
-X1 = [0.5, 1.0, -1.0, 0.42, 0.24]
-X2 = [2.4, 4.2, 0.5, -0.24]
-X = np.concatenate([X1, X2]).reshape(-1,1)
-lengths = [len(X1), len(X2)]
-hmm.GaussianHMM(n_components=2).fit(X, lengths)
-
-#This is just a testing file so far, because our actual HMM clusterings are not available
-#Maknig basic list of list data from the direct NYT Data (no clustering we just take the whole dataset)
-DailyDeathUnSup = makeHMMUnSupData(NYT_daily, 'deaths', 'fips')
-#Making the mapping of number of deaths to HMM states
-[DailyDeathMap, DailyDeathRMap, DailyDeathUnSupHMM] = makeHMMmap(DailyDeathUnSup)
-#Making supervised X and Y datasets
-DailyDeathSup = makeHMMSupData(DailyDeathUnSupHMM)
-
-#using the superviesed testing data, and making a supervised HMM from this 
-SupHMM = supervised_HMM(DailyDeathSup[0],DailyDeathSup[1])
-SupHMM
-
-test = np.zeros(14)
-for j in range(1000): #This generates a sample of length 14, with a starting state of 2, 
-    test += np.array(sample_sentence(SupHMM, DailyDeathMap, 14, 2))#state of 2 means 2 people died in the county yesterday
-print(test/1000)
-
-
-
+NYT_W_Z_T_HMMs = makeHMMlist(NYT_W, DTW_Clusters, 'NYT_W_Z_T')
+NYT_W_Z_L_HMMs = makeHMMlist(NYT_W, DTW_Clusters, 'NYT_W_Z_L')
+NYT_W_N_T_HMMs = makeHMMlist(NYT_W, DTW_Clusters, 'NYT_W_N_T')
+NYT_W_N_L_HMMs = makeHMMlist(NYT_W, DTW_Clusters, 'NYT_W_N_L')
 

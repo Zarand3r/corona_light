@@ -303,19 +303,28 @@ def model_beyond(fit, params, data, guess_bounds, extrapolate=-1, start=-1):
 	return daily_D
 
 
-def estimate_bounds(res, data, fit):
+def estimate_bounds(res, data, fit, tail=False):
 	mean = 1
 	deviation = 0.2
 	end = len(data)
-	firstnonzero = next((i for i,value in enumerate(data["avg_deaths"].values) if value != 0), None)
-	actual_current = (data["avg_deaths"].values)[firstnonzero+1:end]
-	actual_previous = (data["avg_deaths"].values)[firstnonzero:-1]
-	actual_slope = [i - j for i, j in zip(actual_current, actual_previous)]
-	fit_current = fit[:,7][firstnonzero+1:end]
-	fit_previous = fit[:,7][firstnonzero:-1]
-	fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
-	slope_ratio = np.array(actual_slope)/np.array(fit_slope)
-	slope_ratio = reject_outliers(slope_ratio, m=3)
+	if tail:
+		actual_current = (data["deaths"].values)[int(end/2):end]
+		actual_previous = (data["deaths"].values)[-1+int(end/2):-1]
+		actual_slope = [i - j for i, j in zip(actual_current, actual_previous)]
+		fit_current = fit[:,7][int(end/2):end]
+		fit_previous = fit[:,7][-1+int(end/2):-1]
+		fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
+		slope_ratio = np.array(actual_slope)/np.array(fit_slope)
+	else:
+		firstnonzero = next((i for i,value in enumerate(data["avg_deaths"].values) if value != 0), None)
+		actual_current = (data["avg_deaths"].values)[firstnonzero+1:end]
+		actual_previous = (data["avg_deaths"].values)[firstnonzero:-1]
+		actual_slope = [i - j for i, j in zip(actual_current, actual_previous)]
+		fit_current = fit[:,7][firstnonzero+1:end]
+		fit_previous = fit[:,7][firstnonzero:-1]
+		fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
+		slope_ratio = np.array(actual_slope)/np.array(fit_slope)
+		# slope_ratio = reject_outliers(slope_ratio, m=3)
 	if len(slope_ratio) > 0:
 		# mean = 0
 		# deviation = np.std(abs(slope_ratio))
@@ -927,7 +936,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [27053] #56013,1017, 44007, 42101, 6037 27053
+	fips_list = [36061] #56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1236,7 +1245,7 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="avg_deaths")
 	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
 
 
