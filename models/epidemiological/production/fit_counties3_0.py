@@ -567,15 +567,25 @@ def leastsq_qd(params, data, bias=None, weight=False, fitQ=False, death_metric="
 	R = s[:,6]
 	D = s[:,7]
 
+	last_weight = 1.5
+	if weight and weight is not True:
+		if weight > 0.5:
+			last_weight = weight
+
+	bias_value = 0.4
+	# if bias and bias is not True:
+	# 	if bias >= 0 and bias < last_weight:
+	# 		bias_value = bias
+
 	w = 1
 	regime_boundary = 0
 	if bias is not None:
 		regime_boundary = bias+death_time
-		w0 = np.zeros(regime_boundary)+0.4
+		w0 = np.zeros(regime_boundary)+bias_value
 		w = np.concatenate((w0, np.zeros(len(data)-regime_boundary)+1))
 
 	if weight:
-		w1 = np.geomspace(0.5,1.5,len(data)-regime_boundary)
+		w1 = np.geomspace(0.5,last_weight,len(data)-regime_boundary)
 		if bias is not None:
 			w = np.concatenate((w[:regime_boundary],w1))
 		else:
@@ -1245,8 +1255,18 @@ if __name__ == '__main__':
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="avg_deaths")
-	# output_dict = fit_counties2_1.submission(end, regime=False, weight=True, guesses=guesses, start=-7, quick=True, fitQ=False)
+
+	# guesses = [1.82201537e-01, 2.12071019e-01, 3.01676941e-01, 3.71959375e-01, \
+	# 6.38936196e-01, 5.15287702e-02, 2.52264055e-02, 8.48675230e-02,	\
+	# 5.13296548e-01, 5.64803006e-02, 2.04065543e-02, 5.69046365e-02,	\
+	# 4.80159732e-02, 2.16988985e-02, 1.97619973e-01, 4.88219910e-04,	\
+	# 1.64356993e-03, 7.92364919e-01, 3.30201447e-01, 9.81980536e-06,	\
+	# 6.50787303e-10, 1.56464482e-04, 3.87526191e-03, 1.51927789e-05]
+
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+
+	# makie trail an option for error bound
+	# make it possible to set value for bias, just like for weight
 
 
 

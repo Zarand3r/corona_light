@@ -28,6 +28,19 @@ import loader
 
 death_time = 14
 
+def process_data(data_covid, data_population, save=True):
+	covid = loader.load_data(data_covid)
+	loader.convert_dates(covid, "date")
+	population = loader.load_data(data_population)
+	covid.loc[covid["county"]=='New York City', "fips"]=36061
+	covid['Population'] = covid.apply(lambda row: loader.query(population, "FIPS", row.fips)['total_pop'], axis=1)
+	covid.dropna(subset=['fips'], inplace=True)
+	covid['fips']=covid['fips'].astype(int)
+	# covid = add_active_cases(covid, "/data/us/covid/JHU_daily_US.csv")
+	if save:
+		covid.to_csv(f"{homedir}" + "/models/gaussian/us_training_data.csv")
+	return covid
+
 def add_active_cases(us, data_active_cases):
 	active_cases = loader.load_data(data_active_cases)
 	active_cases['FIPS']=active_cases['FIPS'].astype(int)
@@ -51,22 +64,6 @@ def add_active_cases(us, data_active_cases):
 
 	us["active_cases"] = active_column
 	return us
-
-
-
-def process_data(data_covid, data_population, save=True):
-	covid = loader.load_data(data_covid)
-	loader.convert_dates(covid, "date")
-	population = loader.load_data(data_population)
-	covid.loc[covid["county"]=='New York City', "fips"]=36061
-	covid['Population'] = covid.apply(lambda row: loader.query(population, "FIPS", row.fips)['total_pop'], axis=1)
-	covid.dropna(subset=['fips'], inplace=True)
-	covid['fips']=covid['fips'].astype(int)
-	# covid = add_active_cases(covid, "/data/us/covid/JHU_daily_US.csv")
-	if save:
-		covid.to_csv(f"{homedir}" + "/models/gaussian/us_training_data.csv")
-	return covid
-
 
 ###########################################################
 
