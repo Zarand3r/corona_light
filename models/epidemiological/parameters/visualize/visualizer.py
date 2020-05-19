@@ -171,7 +171,7 @@ def visualize(input_path):
 	trainTSNE(X, counties, states_labels, density_labels, savefig=input_file)
 
 if __name__ == '__main__':
-	input_path = '../old_parameters2_1_0.csv'
+	input_path = '../old_parameters3_0_2.csv'
 	visualize(input_path)
 
 

@@ -307,14 +307,27 @@ def estimate_bounds(res, data, fit, tail=False):
 	mean = 1
 	deviation = 0.2
 	end = len(data)
-	if tail:
-		actual_current = (data["deaths"].values)[int(end/2):end]
-		actual_previous = (data["deaths"].values)[-1+int(end/2):-1]
+	if tail and type(tail) == int:
+		print(tail)
+		actual_current = (data["deaths"].values)[int(tail):end]
+		actual_previous = (data["deaths"].values)[-1+int(tail):-1]
 		actual_slope = [i - j for i, j in zip(actual_current, actual_previous)]
-		fit_current = fit[:,7][int(end/2):end]
-		fit_previous = fit[:,7][-1+int(end/2):-1]
+		fit_current = fit[:,7][int(tail):end]
+		fit_previous = fit[:,7][-1+int(tail):-1]
 		fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
 		slope_ratio = np.array(actual_slope)/np.array(fit_slope)
+		if len(slope_ratio) > 0:
+			# mean = 0
+			# deviation = np.std(abs(slope_ratio))
+			mean = np.mean(slope_ratio)
+			deviation = np.std(slope_ratio)
+			if deviation > 0.4:
+				deviation = 0.4
+			if mean < 1-deviation/2:
+				mean = 1-deviation/2
+			elif mean > 1 + deviation/2:
+				mean = 1 + deviation/2
+
 	else:
 		firstnonzero = next((i for i,value in enumerate(data["avg_deaths"].values) if value != 0), None)
 		actual_current = (data["avg_deaths"].values)[firstnonzero+1:end]
@@ -324,18 +337,18 @@ def estimate_bounds(res, data, fit, tail=False):
 		fit_previous = fit[:,7][firstnonzero:-1]
 		fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
 		slope_ratio = np.array(actual_slope)/np.array(fit_slope)
-		# slope_ratio = reject_outliers(slope_ratio, m=3)
-	if len(slope_ratio) > 0:
-		# mean = 0
-		# deviation = np.std(abs(slope_ratio))
-		mean = np.mean(slope_ratio)
-		deviation = np.std(slope_ratio)
-		if deviation > 0.2:
-			deviation = 0.2
-		if mean < 1-deviation/2:
-			mean = 1-deviation/2
-		elif mean > 1 + deviation/2:
-			mean = 1 + deviation/2
+		slope_ratio = reject_outliers(slope_ratio, m=3)
+		if len(slope_ratio) > 0:
+			# mean = 0
+			# deviation = np.std(abs(slope_ratio))
+			mean = np.mean(slope_ratio)
+			deviation = np.std(slope_ratio)
+			if deviation > 0.2:
+				deviation = 0.2
+			if mean < 1-deviation/2:
+				mean = 1-deviation/2
+			elif mean > 1 + deviation/2:
+				mean = 1 + deviation/2
 
 	return (mean,deviation)
 
@@ -361,7 +374,7 @@ def quickie(fit, data, guess_bounds, start=-1):
 	return change_bound
 
 # returns uncertainty of the fit for all variables
-def get_fit_errors(res, p0_params, data, extrapolate=14, start=-1, quick=False, death_metric="deaths"):
+def get_fit_errors(res, p0_params, data, extrapolate=14, start=-1, quick=False, tail=False, death_metric="deaths"):
 	population = list(data["Population"])[-1]
 	errors = get_param_errors(res, population)
 	errors[len(p0_params):] = 0
@@ -370,7 +383,12 @@ def get_fit_errors(res, p0_params, data, extrapolate=14, start=-1, quick=False, 
 		start = -1*len(data)+1
 
 	fit = model(res.x, data, extrapolate)
-	guess_bounds = estimate_bounds(res,data,fit)
+	if type(tail) == int and start is not None:
+		tail = len(data) + start + tail
+		if tail <= 1:
+			tail = False
+
+	guess_bounds = estimate_bounds(res,data,fit,tail=tail)
 	if guess_bounds == (None, None):
 		return np.zeros((1,int(len(data)+extrapolate)))
 
@@ -462,7 +480,7 @@ def plot_model(res, data, extrapolate=14, boundary=None, plot_infectious=False, 
 	p.legend.location = 'top_left'
 	bokeh.io.show(p)
 
-def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None, plot_infectious=False, start=-1, quick=False, death_metric="deaths"):
+def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None, plot_infectious=False, start=-1, quick=False, tail=False, death_metric="deaths"):
 	s = model(res.x, data, len(data)+extrapolate)
 	P = s[:,0]
 	E = s[:,1]
@@ -473,7 +491,7 @@ def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None,
 	R = s[:,6]
 	D = s[:,7]
 
-	uncertainty = get_fit_errors(res, p0_params, data, extrapolate=extrapolate, start=start, quick=quick, death_metric=death_metric)
+	uncertainty = get_fit_errors(res, p0_params, data, extrapolate=extrapolate, start=start, quick=quick, tail=tail, death_metric=death_metric)
 	
 	s1 = np.nanpercentile(uncertainty, 10, axis=0)
 	s2 = np.nanpercentile(uncertainty, 90, axis=0)
@@ -513,6 +531,10 @@ def plot_with_errors_sample(res, p0_params, data, extrapolate=14, boundary=None,
 def test_convergence(data_length, pop, predictions):
 	converge = True
 	deaths = [death[1] for death in predictions]
+	min_death = min(deaths)
+	max_death = max(deaths)
+	if min_death < 0 or max_death > 0.1*pop:
+		converge = False
 	diff = deaths[-1] - deaths[data_length-1] 
 	if diff < 0 or deaths[-1] > 0.3*pop:
 		converge = False
@@ -612,7 +634,7 @@ def leastsq_qd(params, data, bias=None, weight=False, fitQ=False, death_metric="
 	return d_error
 
 
-def fit(data, bias=None, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, death_metric="deaths"):
+def fit(data, bias=None, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, death_metric="deaths"):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
 	initial_ranges = [(0,1), (0,1), (0,0.01), (0,0.01), (0,0.01), (0,0.01), (0,0.01)]
 	ranges = param_ranges+initial_ranges
@@ -637,10 +659,10 @@ def fit(data, bias=None, weight=False, plot=False, extrapolate=14, guesses=None,
 		death_pdf = None
 		if plot:
 			plot_model(res, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True, death_metric=death_metric)
-			death_pdf = plot_with_errors_sample(res, guesses[:17], data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, start=start, quick=quick, death_metric=death_metric)
+			death_pdf = plot_with_errors_sample(res, guesses[:17], data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, start=start, quick=quick, tail=tail, death_metric=death_metric)
 		else:
 			if getbounds:
-				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, start=start, quick=quick, death_metric=death_metric)
+				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, start=start, quick=quick, tail=tail, death_metric=death_metric)
 
 	return (predictions, death_pdf, res)
 
@@ -675,7 +697,7 @@ def model2(params, data, extrapolate=-1, offset=0):
 	
 
 # returns uncertainty of the fit for all variables
-def get_fit_errors2(res, p0_params, original, data, extrapolate=14, start=-1, quick=False, death_metric="deaths"):
+def get_fit_errors2(res, p0_params, original, data, extrapolate=14, start=-1, quick=False, tail=False, death_metric="deaths"):
 	population = list(data["Population"])[-1]
 	errors = get_param_errors(res, population)
 	errors[len(p0_params):] = 0
@@ -684,7 +706,12 @@ def get_fit_errors2(res, p0_params, original, data, extrapolate=14, start=-1, qu
 		start = -1*len(data)+1
 
 	fit = model2(res.x, data, extrapolate)
-	guess_bounds = estimate_bounds(res,data,fit)
+	if type(tail) == int and start is not None:
+		tail = start + tail
+		if tail <=0:
+			tail = False
+
+	guess_bounds = estimate_bounds(res,data,fit, tail=tail)
 	if guess_bounds == (None, None):
 		return np.zeros((1,int(len(data)+extrapolate)))
 
@@ -819,7 +846,7 @@ def plot_with_errors_sample2(res, res_original, p0_params, original, data, extra
 	# s2 = np.nanpercentile(uncertainty, 90, axis=0)
 	# p.varea(x=tp, y1=s1, y2=s2, color='black', fill_alpha=0.2)
 	uncertainty_o = get_fit_errors(res_original, p0_params, original, extrapolate=len(data)-death_time, start=None, quick=quick)
-	uncertainty = get_fit_errors2(res, p0_params, original, data, extrapolate=extrapolate, start=start, quick=quick)
+	uncertainty = get_fit_errors2(res, p0_params, original, data, extrapolate=extrapolate, start=start, quick=quick, tail=tail)
 	s1_o = np.nanpercentile(uncertainty_o, 10, axis=0)
 	s2_o = np.nanpercentile(uncertainty_o, 90, axis=0)
 	s1 = np.nanpercentile(uncertainty, 10, axis=0)
@@ -908,7 +935,7 @@ def leastsq_qd2(params, data, weight=False, fitQ=False, death_metric="deaths"):
 
 
 # TODO: The initial ranges from the guesses hav error ValueError: Each lower bound must be strictly less than each upper bound. for philadelphia county 42101
-def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, death_metric="deaths"):
+def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, death_metric="deaths"):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
 	initial_ranges = [(0.9*guesses[17],1.1*guesses[17]), (0.9*guesses[18],1.1*guesses[18]), (0.9*guesses[19],1.1*guesses[19]), (0.9*guesses[20],1.1*guesses[20]), (0.9*guesses[21],1.1*guesses[21]), \
 	(0.9*guesses[22],1.1*guesses[22]), (0.9*guesses[23],1.1*guesses[23]), (0.1*guesses[24],10*guesses[24])]
@@ -927,12 +954,12 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 			death_pdf = plot_with_errors_sample2(res, res_original, guesses[:17], original, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, start=start, quick=quick, death_metric=death_metric)
 		else:
 			if getbounds:
-				death_pdf = get_fit_errors2(res, guesses[:17], original, data, extrapolate=extrapolate, start=start, quick=quick, death_metric=death_metric)
+				death_pdf = get_fit_errors2(res, guesses[:17], original, data, extrapolate=extrapolate, start=start, quick=quick, tail=tail, death_metric=death_metric)
 
 	return (predictions, death_pdf, res)
 
 ###########################################################
-def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths"):
+def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths"):
 
 	counties_dates = []
 	counties_death_errors = []
@@ -946,7 +973,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [36061] #56013,1017, 44007, 42101, 6037 27053
+	fips_list = [39169, 25011] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1000,7 +1027,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 			if policy_date is None or regime_change > len(county_data) - (death_time+5):
 				regime=False
 				extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-				predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+				predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 			else:
 				county_data1 = county_data[:regime_change+death_time] ## experimental. Assumes first regime will carry over until death_time into future. Used to be just county_data[:regime_change]
@@ -1020,11 +1047,11 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 				for i in range(death_time):
 					county_data2.at[i, death_metric] *= -1
 				extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-				predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+				predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 		else:
 			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-			predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+			predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 
 		if res is None:
@@ -1036,9 +1063,9 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
 		if death_cdf is None:
 			if regime:
-				death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True, death_metric=death_metric)
+				death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True, tail=tail, death_metric=death_metric)
 			else:
-				death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True, death_metric=death_metric)
+				death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True, tail=tail, death_metric=death_metric)
 			death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 		
 
@@ -1078,6 +1105,7 @@ def fit_single_county(input_dict):
 	guesses = input_dict["guesses"]
 	start= input_dict["start"]
 	quick = input_dict["quick"]
+	tail = input_dict["tail"]
 	fitQ = input_dict["fitQ"]
 	getbounds = input_dict["getbounds"]
 	adaptive = input_dict["adaptive"]
@@ -1157,11 +1185,11 @@ def fit_single_county(input_dict):
 		for i in range(death_time):
 			county_data2.at[i, death_metric] *= -1
 		extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-		predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, start=start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 	else:
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-		predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		predictions, death_pdf, res = fit(county_data, bias=regime_change, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, start=start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 
 	if res is None:
@@ -1172,9 +1200,9 @@ def fit_single_county(input_dict):
 	death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
 	if death_cdf is None:
 		if regime:
-			death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True, death_metric=death_metric)
+			death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, start=start, quick=True, tail=tail, death_metric=death_metric)
 		else:
-			death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True, death_metric=death_metric)
+			death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, start=start, quick=True, tail=tail, death_metric=death_metric)
 		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 	death_cdf = np.transpose(death_cdf)
 
@@ -1184,7 +1212,7 @@ def fit_single_county(input_dict):
 	
 
 
-def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
+def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1214,6 +1242,7 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 		input_dict["guesses"] = guesses
 		input_dict["start"] = start
 		input_dict["quick"] = quick
+		input_dict['tail'] = tail
 		input_dict["fitQ"] = fitQ
 		input_dict["getbounds"] = getbounds
 		input_dict["adaptive"] = adaptive
@@ -1249,6 +1278,7 @@ def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, st
 
 # figure out how to stitch two gaussians for regime
 
+
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
 	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
@@ -1263,10 +1293,85 @@ if __name__ == '__main__':
 	# 1.64356993e-03, 7.92364919e-01, 3.30201447e-01, 9.81980536e-06,	\
 	# 6.50787303e-10, 1.56464482e-04, 3.87526191e-03, 1.51927789e-05]
 
-	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=None, quick=True, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, fitQ=False, adaptive=False, death_metric="deaths")
 
-	# makie trail an option for error bound
+	# makie tail an option for error bound
 	# make it possible to set value for bias, just like for weight
 
+	#34017, 17031, 25013, 34023, 36059, 36061, 33011, 42041, 42101, 44007, 51770, 12086, 18043, 24031, 32003, 36103, 36067
 
 
+
+
+
+
+
+def multi_submission_combined(end, guesses, combined_parameters, cutoff=None, fix_nonconvergent=False):
+	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
+	counties_dates = []
+	counties_death_errors = []
+	counties_fips = []
+	nonconvergent = []
+	parameters_list = {}
+
+	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
+	us_daily = loader.load_data("/data/us/covid/nyt_us_counties_daily.csv")
+	policies = loader.load_data("/data/us/other/policies.csv")
+	policies = policies.dropna(subset=['stay at home'])
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	fips_list = fips_key["FIPS"]
+
+	data = []
+	for county in fips_list:
+		input_dict = {}
+		input_dict["us"] = us
+		input_dict["us_daily"] = us_daily
+		input_dict["policies"] = policies
+		input_dict["county"] = county
+		input_dict["end"] = end
+		input_dict["bias"] = False
+		input_dict["regime"] = False
+		input_dict["weight"] = True
+		input_dict["guesses"] = guesses
+		input_dict["start"] = 0
+		input_dict["quick"] = True
+		input_dict['tail'] = False
+		input_dict["fitQ"] = False
+		input_dict["getbounds"] = False
+		input_dict["adaptive"] = False
+		input_dict["death_metric"] = "deaths"
+		input_dict["cutoff"] = cutoff
+		if county in list(combined_parameters.keys()):
+			if combined_parameters[county] is None:
+				print("foo") #add to nonconvergent (make something None that causes fit_single_county to think it is nonconvergent)
+			for key in list(combined_parameters[county].keys()):
+				input_dict[key] = (combined_parameters[county])[key]
+		data.append(input_dict)
+
+	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
+	results = pool.map(fit_single_county, data)
+	
+	for result in results:
+		if result is not None:
+			if len(result) == 1:
+				nonconvergent.append(result[0]) 
+			else:
+				(dates, death_cdf, county, parameters) = result
+				counties_dates.append(dates)
+				counties_death_errors.append(death_cdf)
+				counties_fips.append(county)
+				parameters_list[county] = parameters
+
+	if len(nonconvergent) > 0:
+		print(f"nonconvergent: {nonconvergent}")
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, fix_nonconvergent=fix_nonconvergent) 
+		counties_dates = counties_dates + counties_dates_non
+		for death_cdf in counties_death_errors_non:
+			counties_death_errors.append(death_cdf)
+		counties_fips = counties_fips + counties_fips_non
+
+	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
+	"nonconvergent": nonconvergent, "parameters": parameters_list}
+	return output_dict
