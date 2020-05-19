@@ -308,12 +308,13 @@ def estimate_bounds(res, data, fit, tail=False):
 	deviation = 0.2
 	end = len(data)
 	if tail and type(tail) == int:
-		print(tail)
-		actual_current = (data["deaths"].values)[int(tail):end]
-		actual_previous = (data["deaths"].values)[-1+int(tail):-1]
+		firstnonzero = next((i for i,value in enumerate(data["avg_deaths"].values) if value != 0), None)
+		tail = max(firstnonzero, tail)
+		actual_current = (data["deaths"].values)[tail:end]
+		actual_previous = (data["deaths"].values)[-1+tail:-1]
 		actual_slope = [i - j for i, j in zip(actual_current, actual_previous)]
-		fit_current = fit[:,7][int(tail):end]
-		fit_previous = fit[:,7][-1+int(tail):-1]
+		fit_current = fit[:,7][tail:end]
+		fit_previous = fit[:,7][-1+tail:-1]
 		fit_slope = [i - j for i, j in zip(fit_current, fit_previous)]
 		slope_ratio = np.array(actual_slope)/np.array(fit_slope)
 		if len(slope_ratio) > 0:
@@ -973,7 +974,7 @@ def test(end, bias=False, regime=False, weight=True, plot=False, guesses=None, s
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [39169, 25011] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [36061] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1212,7 +1213,7 @@ def fit_single_county(input_dict):
 	
 
 
-def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
+def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, tail=-14, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1293,8 +1294,7 @@ if __name__ == '__main__':
 	# 1.64356993e-03, 7.92364919e-01, 3.30201447e-01, 9.81980536e-06,	\
 	# 6.50787303e-10, 1.56464482e-04, 3.87526191e-03, 1.51927789e-05]
 
-	# test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
-	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, fitQ=False, adaptive=False, death_metric="deaths")
+	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
 
 	# makie tail an option for error bound
 	# make it possible to set value for bias, just like for weight

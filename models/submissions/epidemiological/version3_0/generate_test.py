@@ -127,9 +127,9 @@ if __name__ == '__main__':
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 
-	main(start_date, end_date, guesses, bias=False, adaptive=False, cutoff=-10, fix_nonconvergent=True, sub_id="3_0_0")
-	main(start_date, end_date, guesses, bias=True, adaptive=False, cutoff=-10, fix_nonconvergent=False, sub_id="3_0_1")
-	main(start_date, end_date, guesses, bias=True, adaptive=True, cutoff=-10, fix_nonconvergent=False, sub_id="3_0_2")
+	main(start_date, end_date, guesses, bias=False, adaptive=False, cutoff=-14, fix_nonconvergent=True, sub_id="3_0_0")
+	main(start_date, end_date, guesses, bias=True, adaptive=False, cutoff=-14, fix_nonconvergent=False, sub_id="3_0_1")
+	main(start_date, end_date, guesses, bias=True, adaptive=True, cutoff=-14, fix_nonconvergent=False, sub_id="3_0_2")
 	
 
 
