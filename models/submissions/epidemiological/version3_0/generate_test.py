@@ -92,7 +92,7 @@ def format_submission(dates, death_errors, fips, start, transpose=False):
 		
 	return death_errors
 
-def main(start_date, end_date, guesses, bias=False, regime=False, weight=True, start=0, quick=True, fitQ=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=False, sub_id="0"):
+def main(start_date, end_date, guesses, bias=False, regime=False, weight=True, start=0, quick=True, tail=False, fitQ=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=False, sub_id="0"):
 	submission = []
 	output_dict = fit_counties3_0.multi_submission(end_date, bias=bias, regime=regime, weight=weight, guesses=guesses, start=start, quick=quick, fitQ=fitQ, adaptive=adaptive, death_metric=death_metric, cutoff=cutoff, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitQ
 	counties_dates = output_dict["counties_dates"]
@@ -104,7 +104,7 @@ def main(start_date, end_date, guesses, bias=False, regime=False, weight=True, s
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start_date)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
-	output_file = f'{homedir}/models/submissions/epidemiological/version3_0/old/predictions{sub_id}.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_0/old_submissions/predictions{sub_id}.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
@@ -129,7 +129,7 @@ if __name__ == '__main__':
 
 	main(start_date, end_date, guesses, bias=False, adaptive=False, cutoff=-14, fix_nonconvergent=True, sub_id="3_0_0")
 	main(start_date, end_date, guesses, bias=True, adaptive=False, cutoff=-14, fix_nonconvergent=False, sub_id="3_0_1")
-	main(start_date, end_date, guesses, bias=True, adaptive=True, cutoff=-14, fix_nonconvergent=False, sub_id="3_0_2")
+	main(start_date, end_date, guesses, bias=True, adaptive=True, cutoff=-14, tail=-14, fix_nonconvergent=False, sub_id="3_0_2")
 	
 
 

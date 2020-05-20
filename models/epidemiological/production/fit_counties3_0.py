@@ -1213,7 +1213,7 @@ def fit_single_county(input_dict):
 	
 
 
-def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, tail=-14, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
+def multi_submission(end, bias=False, regime=True, weight=True, guesses=None, start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1287,13 +1287,6 @@ if __name__ == '__main__':
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 
-	# guesses = [1.82201537e-01, 2.12071019e-01, 3.01676941e-01, 3.71959375e-01, \
-	# 6.38936196e-01, 5.15287702e-02, 2.52264055e-02, 8.48675230e-02,	\
-	# 5.13296548e-01, 5.64803006e-02, 2.04065543e-02, 5.69046365e-02,	\
-	# 4.80159732e-02, 2.16988985e-02, 1.97619973e-01, 4.88219910e-04,	\
-	# 1.64356993e-03, 7.92364919e-01, 3.30201447e-01, 9.81980536e-06,	\
-	# 6.50787303e-10, 1.56464482e-04, 3.87526191e-03, 1.51927789e-05]
-
 	test(end, bias=True, regime=False, weight=True, plot=True, guesses=guesses, start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
 
 	# makie tail an option for error bound
@@ -1301,77 +1294,3 @@ if __name__ == '__main__':
 
 	#34017, 17031, 25013, 34023, 36059, 36061, 33011, 42041, 42101, 44007, 51770, 12086, 18043, 24031, 32003, 36103, 36067
 
-
-
-
-
-
-
-def multi_submission_combined(end, guesses, combined_parameters, cutoff=None, fix_nonconvergent=False):
-	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
-	counties_dates = []
-	counties_death_errors = []
-	counties_fips = []
-	nonconvergent = []
-	parameters_list = {}
-
-	# us = process_data("/data/us/covid/nyt_us_counties.csv", "/data/us/demographics/county_populations.csv")
-	us = loader.load_data("/models/epidemiological/production/us_training_data.csv")
-	us_daily = loader.load_data("/data/us/covid/nyt_us_counties_daily.csv")
-	policies = loader.load_data("/data/us/other/policies.csv")
-	policies = policies.dropna(subset=['stay at home'])
-	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"]
-
-	data = []
-	for county in fips_list:
-		input_dict = {}
-		input_dict["us"] = us
-		input_dict["us_daily"] = us_daily
-		input_dict["policies"] = policies
-		input_dict["county"] = county
-		input_dict["end"] = end
-		input_dict["bias"] = False
-		input_dict["regime"] = False
-		input_dict["weight"] = True
-		input_dict["guesses"] = guesses
-		input_dict["start"] = 0
-		input_dict["quick"] = True
-		input_dict['tail'] = False
-		input_dict["fitQ"] = False
-		input_dict["getbounds"] = False
-		input_dict["adaptive"] = False
-		input_dict["death_metric"] = "deaths"
-		input_dict["cutoff"] = cutoff
-		if county in list(combined_parameters.keys()):
-			if combined_parameters[county] is None:
-				print("foo") #add to nonconvergent (make something None that causes fit_single_county to think it is nonconvergent)
-			for key in list(combined_parameters[county].keys()):
-				input_dict[key] = (combined_parameters[county])[key]
-		data.append(input_dict)
-
-	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
-	results = pool.map(fit_single_county, data)
-	
-	for result in results:
-		if result is not None:
-			if len(result) == 1:
-				nonconvergent.append(result[0]) 
-			else:
-				(dates, death_cdf, county, parameters) = result
-				counties_dates.append(dates)
-				counties_death_errors.append(death_cdf)
-				counties_fips.append(county)
-				parameters_list[county] = parameters
-
-	if len(nonconvergent) > 0:
-		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, fix_nonconvergent=fix_nonconvergent) 
-		counties_dates = counties_dates + counties_dates_non
-		for death_cdf in counties_death_errors_non:
-			counties_death_errors.append(death_cdf)
-		counties_fips = counties_fips + counties_fips_non
-
-	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
-	"nonconvergent": nonconvergent, "parameters": parameters_list}
-	return output_dict

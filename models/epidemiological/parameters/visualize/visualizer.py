@@ -139,7 +139,8 @@ def trainTSNE(data, counties, colorlabels, sizelabels, plot=True, savefig=None):
 				plt.savefig("figures/"+"tsne"+savefig)
 		plt.show()
 
-def visualize(input_path):
+def visualize(param_id):
+	input_path = f'../parameters{param_id}.csv'
 	input_file = Path(input_path).stem
 	fopen = open(input_path,'r')
 	data = fopen.read()
@@ -171,7 +172,7 @@ def visualize(input_path):
 	trainTSNE(X, counties, states_labels, density_labels, savefig=input_file)
 
 if __name__ == '__main__':
-	input_path = '../old_parameters3_0_2.csv'
-	visualize(input_path)
+	param_id = "3_0_1"
+	visualize(param_id)
 
 

@@ -383,9 +383,9 @@ def fit(data, guesses=None, weight=False, plot=False, extrapolate=14):
 
 def main(weight=True, plot=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
-	# italy = process_data("/data/international/italy/covid/dpc-covid19-ita-regioni.csv", "/models/data/international/italy/demographics/region-populations.csv")
-	italy = loader.load_data("/models/epidemiological/italy_training_data.csv")
-	lombardia = loader.query(italy, "Region", "Lombardia")[:-14]
+	italy = process_data("/data/international/italy/covid/dpc-covid19-ita-regioni.csv", "/models/data/international/italy/demographics/region-populations.csv")
+	italy = loader.load_data("/models/epidemiological/italy/italy_training_data.csv")
+	lombardia = loader.query(italy, "Region", "Lombardia")
 	# guesses = [6.69209312e-02, 1.10239913e-01, 4.33677422e-02, 3.01411969e-01,
 	# 3.55547441e-01, 1.35711130e-01, 1.87415444e-01, 3.40118459e-01,
 	# 6.54169531e-01, 5.80742686e-02, 2.66926724e-05, 1.27460914e-01,
@@ -398,6 +398,10 @@ def main(weight=True, plot=True):
 	2.79663721e-02, 1.22173817e-01, 1.33376981e-01, 9.21393091e-08,
 	1.18451662e-03, 8.58246731e-01, 1.02247495e-01, 4.45881513e-10,
 	1.92751396e-02, 2.36032152e-18, 3.35111924e-05, 7.02140155e-06]
+	# guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	# 9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	# 4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	# 3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 	fit(lombardia, guesses = guesses, weight=weight, plot=plot, extrapolate=14)
 
 if __name__ == '__main__':
