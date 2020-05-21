@@ -650,7 +650,6 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 
 	for boundary in [len(data)]:
 		res = least_squares(leastsq_qd, guesses, args=(data[:boundary],bias, bias_value, weight, fitQ, death_metric), bounds=np.transpose(np.array(ranges)))
-		print(res.x)
 		predictions = get_deaths(res, data, extrapolate=extrapolate)
 		convergent_status = test_convergence(len(data), data['Population'].values[0], predictions) 
 		if convergent_status == False:
@@ -1203,7 +1202,7 @@ def fit_single_county(input_dict):
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 		county_tail_regime = len(county_data) + tail_regime
 		county_tail_regime = max(firstnonzero, county_tail_regime)
-		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 		if res is not None:
 			predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=False, extrapolate=extrapolate, guesses=res.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 			if res2 is not None:
