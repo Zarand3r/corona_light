@@ -576,7 +576,7 @@ def fill_nonconvergent(nonconvergent, data, end, fix_nonconvergent=False):
 	return (counties_dates, counties_death_errors, counties_fips)
 		
 
-def leastsq_qd(params, data, bias=None, weight=False, fitQ=False, death_metric="deaths"):
+def leastsq_qd(params, data, bias=None, bias_value=0.4, weight=False, fitQ=False, death_metric="deaths"):
 	Ddata = (data[death_metric].values)
 	Qdata = (data['active_cases'].values)
 	s = model(params, data)
@@ -595,22 +595,17 @@ def leastsq_qd(params, data, bias=None, weight=False, fitQ=False, death_metric="
 		if weight > 0.5:
 			last_weight = weight
 
-	bias_value = 0.4
-	# if bias and bias is not True:
-	# 	if bias >= 0 and bias < last_weight:
-	# 		bias_value = bias
-
 	w = 1
-	policy_regime_boundary = 0
+	regime_boudary = 0
 	if bias is not None:
-		policy_regime_boundary = bias+death_time
-		w0 = np.zeros(policy_regime_boundary)+bias_value
-		w = np.concatenate((w0, np.zeros(len(data)-policy_regime_boundary)+1))
+		regime_boudary = bias
+		w0 = np.zeros(regime_boudary)+bias_value
+		w = np.concatenate((w0, np.zeros(len(data)-regime_boudary)+1))
 
 	if weight:
-		w1 = np.geomspace(0.5,last_weight,len(data)-policy_regime_boundary)
+		w1 = np.geomspace(0.5,last_weight,len(data)-regime_boudary)
 		if bias is not None:
-			w = np.concatenate((w[:policy_regime_boundary],w1))
+			w = np.concatenate((w[:regime_boudary],w1))
 		else:
 			w = w1
 		
@@ -634,7 +629,7 @@ def leastsq_qd(params, data, bias=None, weight=False, fitQ=False, death_metric="
 	return d_error
 
 
-def fit(data, bias=None, weight=False, plot=False, extrapolate=14, guesses=None, error_start=-1, quick=False, tail=False, fitQ=False, getbounds=False, death_metric="deaths"):
+def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=14, guesses=None, error_start=-1, quick=False, tail=False, fitQ=False, getbounds=False, death_metric="deaths"):
 	param_ranges = [(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1),(0,1)]
 	initial_ranges = [(0,1), (0,1), (0,0.01), (0,0.01), (0,0.01), (0,0.01), (0,0.01)]
 	ranges = param_ranges+initial_ranges
@@ -650,7 +645,7 @@ def fit(data, bias=None, weight=False, plot=False, extrapolate=14, guesses=None,
 
 
 	for boundary in [len(data)]:
-		res = least_squares(leastsq_qd, guesses, args=(data[:boundary],bias, weight, fitQ, death_metric), bounds=np.transpose(np.array(ranges)))
+		res = least_squares(leastsq_qd, guesses, args=(data[:boundary],bias, bias_value, weight, fitQ, death_metric), bounds=np.transpose(np.array(ranges)))
 		print(res.x)
 		predictions = get_deaths(res, data, extrapolate=extrapolate)
 		convergent_status = test_convergence(len(data), data['Population'].values[0], predictions) 
@@ -960,7 +955,7 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 	return (predictions, death_pdf, res)
 
 ###########################################################
-def test(end, bias=False, policy_regime=False, weight=True, plot=False, guesses=None, error_start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths"):
+def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=False, guesses=None, error_start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths"):
 
 	counties_dates = []
 	counties_death_errors = []
@@ -974,7 +969,7 @@ def test(end, bias=False, policy_regime=False, weight=True, plot=False, guesses=
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [36061] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [34017, 27053] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1018,52 +1013,56 @@ def test(end, bias=False, policy_regime=False, weight=True, plot=False, guesses=
 				death_metric = "avg_deaths"
 
 		dates = pd.to_datetime(county_data["date"].values)
-
-		policy_regime_change = None
+		county_policy_regime = policy_regime
 		if bias or policy_regime:
-			policy_date = int(loader.query(policies, "FIPS", county)["stay at home"].values[0])
-			policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
-
-		if policy_regime:
-			if policy_date is None or policy_regime_change > len(county_data) - (death_time+5):
-				policy_regime=False
-				extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-				predictions, death_pdf, res = fit(county_data, bias=policy_regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
-
+			policy_date = loader.query(policies, "FIPS", county)["stay at home"]
+			if len(policy_date) == 0:
+				county_policy_regime = False
 			else:
-				county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
-				predictions, death_errors1, res0 = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
-				first_parameters = (res0.x)[:17]
-				first_conditions = get_variables(res0, county_data1, policy_regime_change)
-				first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[policy_regime_change]) 
-				N = county_data['Population'].values[0]
-				first_conditions = first_conditions/N
-				parameter_guess = list(first_parameters)+list(first_conditions)
-				parameters[county] = [parameter_guess]
+				policy_date = int(policy_date.values[0])
+				policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
+				if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5):
+					county_policy_regime = False
+					policy_regime_change = None
 
-				county_data2 = county_data[policy_regime_change:]
-				dates2 = dates[policy_regime_change:]
-				county_data2.reset_index(drop=True, inplace=True)
-				
-				for i in range(death_time):
-					county_data2.at[i, death_metric] *= -1
-				extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-				predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		if county_policy_regime:
+			county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
+			predictions, death_errors1, res0 = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+			first_parameters = (res0.x)[:17]
+			first_conditions = get_variables(res0, county_data1, policy_regime_change)
+			first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[policy_regime_change]) 
+			N = county_data['Population'].values[0]
+			first_conditions = first_conditions/N
+			parameter_guess = list(first_parameters)+list(first_conditions)
+			parameters[county] = [parameter_guess]
 
+			county_data2 = county_data[policy_regime_change:]
+			dates2 = dates[policy_regime_change:]
+			county_data2.reset_index(drop=True, inplace=True)
+			
+			for i in range(death_time):
+				county_data2.at[i, death_metric] *= -1
+			extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
+			predictions, death_pdf, res  = fit2(county_data1, res0, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+
+		elif tail_regime and type(tail_regime)==int:
+			tail = tail_regime
+			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+			county_tail_regime = len(county_data) + tail_regime
+			county_tail_regime = max(firstnonzero, county_tail_regime)
+			predictions0, death_pdf0, res0 = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+			predictions, death_pdf, res = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=plot, extrapolate=extrapolate, guesses=res0.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+			if res is None:
+				predictions, death_pdf, res = predictions0, death_pdf0, res0
 		else:
 			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-			if tail_regime:
-				tail = tail_regime
-				predictions, death_pdf, res = fit(county_data, bias=policy_regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
-			else:
-				predictions, death_pdf, res = fit(county_data, bias=policy_regime_change, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+			predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 
 		if res is None:
 			# add to nonconvergent counties
 			nonconvergent.append(county)
 			continue
-		print(res.x)
 
 		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
 		if death_cdf is None:
@@ -1194,7 +1193,7 @@ def fit_single_county(input_dict):
 
 	else:
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
 
 
 	if res is None:
@@ -1215,7 +1214,7 @@ def fit_single_county(input_dict):
 	
 
 
-def multi_submission(end, bias=False, policy_regime=True, weight=True, guesses=None, error_start=-1, quick=False, tail=-14, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
+def multi_submission(end, bias=False, policy_regime=True, weight=True, guesses=None, error_start=-1, quick=False, tail=False, fitQ=False, getbounds=False, adaptive=False, death_metric="deaths", cutoff=None, fix_nonconvergent=True):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1301,7 +1300,7 @@ if __name__ == '__main__':
 	# 1.64356993e-03, 7.92364919e-01, 3.30201447e-01, 9.81980536e-06,	\
 	# 6.50787303e-10, 1.56464482e-04, 3.87526191e-03, 1.51927789e-05]
 
-	test(end, bias=True, policy_regime=False, weight=True, plot=True, guesses=guesses, error_start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=0, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
 
 	# makie tail an option for error bound
 	# make it possible to set value for bias, just like for weight
@@ -1315,7 +1314,7 @@ if __name__ == '__main__':
 	# everything below uses fit_counties3_1
 	# combine_prediction: the old and new are the 3 submissions (all with tail=False except for third one), plus a fourth with tail_regime, maybe a fifth that is some sort of average
 	# combine_confidence: First find the best prediction parameters for each county by scoring the 4 combine_prediction methods without any errors.
-	# Then, find the best error method for the combined county by training it with multi_submission_combined on different weight, bias, tail=-14, parameters with start = -14
+	# Then, find the best error method for the combined county by training it with multi_submission_combined on different weight, tail=-14, parameters with start = -14
 
 
 
