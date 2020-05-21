@@ -151,20 +151,22 @@ def evaluator(submission, start_date):
 	return county_losses
 
 if __name__ == '__main__':
-	start_date = '2020-05-04'
-	latest_date = '2020-05-18'
+	# start_date should be 14 days before the latest date, which should be the last day of data
+	start_date = '2020-05-06'
+	latest_date = '2020-05-20'
 	# old_submissions = ['../old_submissions/submission3_0_0.csv', '../old_submissions/submission3_0_1.csv', '../old_submissions/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
-	old_submissions = ['../new_submissions/submission3_0_0.csv', '../new_submissions/submission3_0_1.csv', '../new_submissions/submission3_0_2.csv', '../new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
-	new_submissions = ['../new_submissions/submission3_0_0.csv', '../new_submissions/submission3_0_1.csv', '../new_submissions/submission3_0_2.csv', '../new_submissions/submission3_0_3.csv' f'{homedir}/sample_submission.csv']
+	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
+	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
 	scores = []
 	
-	for submission in old_submissions:
-		score = evaluator(submission, start_date)
+	for submission in new_submissions:
+		score = evaluator(submission, latest_date)
 		scores.append(score)
 
 	baseline = scores[0]
+	scored_counties = list(baseline.keys())
 	optimal_submission = {}
-	for county in list(baseline.keys()):
+	for county in scored_counties:
 		best = baseline[county]
 		best_index = 0
 		for index, score in enumerate(scores):
@@ -176,25 +178,27 @@ if __name__ == '__main__':
 		optimal_submission[county] = best_index
 
 
-	baseline_file = '../new_submissions/submission3_0_baseline.csv'
-	new_submissions.append(baseline_file)
+	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_baseline.csv'
+	new_submissions.append(baseline_submission)
 	submission_files = []
 	for submission in new_submissions:
 		submission_file = pd.read_csv(submission, index_col=False)
 		submission_files.append(submission_file)
 
+	baseline_file = submission_files[-1]
 	ultimate_submission = []
-
 	total = len(baseline_file)
 	for index, row in baseline_file.iterrows():
 		print(f"{index+1} / {total}")
 		county = row["id"].split('-')[-1]
-		optimal_file_index = optimal_submission[county]
 		date = row["id"][0:10]
 		day = date.split('-')[-1]
 		month = date.split('-')[-2]
-		if int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
+		if county not in scored_counties or int(day) < int(latest_date.split('-')[-1]) or int(month) < int(latest_date.split('-')[-2]):
 			optimal_file_index = -1
+			ultimate_submission.append(list(row.values))
+			continue
+		optimal_file_index = optimal_submission[county]
 		optimal_file = submission_files[optimal_file_index]
 		ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
 		
@@ -210,8 +214,7 @@ if __name__ == '__main__':
 	combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
 	combined.to_csv(output_file, index=False)
 
-
-	evaluator("../../../checkpoint2/submission6.csv", latest_date)
+	evaluator("combined.csv", latest_date)
 
 
 
