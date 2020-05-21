@@ -2,6 +2,7 @@ import itertools
 import os
 from multiprocessing import Pool
 
+import math
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -598,16 +599,16 @@ def leastsq_qd(params, data, bias=None, bias_value=0.4, weight=False, fitQ=False
 			last_weight = weight
 
 	w = 1
-	regime_boudary = 0
+	regime_boundary = 0
 	if bias is not None:
-		regime_boudary = bias
-		w0 = np.zeros(regime_boudary)+bias_value
-		w = np.concatenate((w0, np.zeros(len(data)-regime_boudary)+1))
+		regime_boundary = bias
+		w0 = np.zeros(regime_boundary)+bias_value
+		w = np.concatenate((w0, np.zeros(len(data)-regime_boundary)+1))
 
 	if weight:
-		w1 = np.geomspace(0.5,last_weight,len(data)-regime_boudary)
+		w1 = np.geomspace(0.5,last_weight,len(data)-regime_boundary)
 		if bias is not None:
-			w = np.concatenate((w[:regime_boudary],w1))
+			w = np.concatenate((w[:regime_boundary],w1))
 		else:
 			w = w1
 		
@@ -972,7 +973,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [36061] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [19049] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -997,6 +998,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 			begin = firstnonzero-death_time
 			if begin >= 0:
 				county_data = county_data[begin:]
+				firstnonzero = death_time
 				county_data.reset_index(drop=True, inplace=True)
 		else:
 			continue # dont add to convonvergent counties, just leave blank and submission script will fill it in with all zeros
@@ -1020,7 +1022,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 		policy_regime_change = -2*death_time
 		if bias or policy_regime:
 			policy_date = loader.query(policies, "FIPS", county)["stay at home"]
-			if len(policy_date) == 0:
+			if len(policy_date) == 0 or math.isnan(policy_date.values[0]):
 				county_policy_regime = False
 			else:
 				policy_date = int(policy_date.values[0])
@@ -1144,6 +1146,7 @@ def fit_single_county(input_dict):
 		begin = firstnonzero-death_time
 		if begin >= 0:
 			county_data = county_data[begin:]
+			firstnonzero = death_time
 			county_data.reset_index(drop=True, inplace=True)
 	else:
 		return None # dont add to nonconvergent counties, just leave blank and submission script will fill it in with all zeros
@@ -1304,7 +1307,7 @@ if __name__ == '__main__':
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 
-	test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-18, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
 
 
 
