@@ -159,7 +159,11 @@ def makeHMM(X):
             if j < 0:
                 n += 1
         #gettin index of best point by elbow method (using first derivative)
-        ind = np.argmax(np.diff(scores)[(n + 1):]/scores[(n + 2):])
+        if len(np.diff(scores)[(n + 1):]/scores[(n + 2):]) != 0:
+            ind = np.argmax(np.diff(scores)[(n + 1):]/scores[(n + 2):])
+        else:
+            n = len(scores) - 12
+            ind = np.argmax(np.diff(scores)[(n + 1):]/scores[(n + 2):])
         return hmm.GaussianHMM(n_components = ind + n + 3, covariance_type="full").fit(X[0],X[1])
     
 def makeHMMlist(Data, DTW, cluster_col):
