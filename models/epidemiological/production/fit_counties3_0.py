@@ -1164,7 +1164,7 @@ def fit_single_county(input_dict):
 
 	dates = pd.to_datetime(county_data["date"].values)
 
-	policy_regime_change = None
+	policy_regime_change = -2*death_time
 	if bias or policy_regime:
 		policy_date = loader.query(policies, "FIPS", county)["stay at home"]
 		if len(policy_date) == 0:
@@ -1176,7 +1176,7 @@ def fit_single_county(input_dict):
 			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5):
 				bias = False
 				policy_regime = False
-				policy_regime_change = None
+				policy_regime_change = -2*death_time
 
 	if policy_regime:
 		county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
