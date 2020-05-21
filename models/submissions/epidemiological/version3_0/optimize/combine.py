@@ -151,7 +151,7 @@ def evaluator(submission, start_date):
 	return county_losses
 
 if __name__ == '__main__':
-	start_date = '2020-05-07'
+	start_date = '2020-05-04'
 	latest_date = '2020-05-18'
 	# old_submissions = ['../old_submissions/submission3_0_0.csv', '../old_submissions/submission3_0_1.csv', '../old_submissions/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
 	old_submissions = ['../new_submissions/submission3_0_0.csv', '../new_submissions/submission3_0_1.csv', '../new_submissions/submission3_0_2.csv', '../new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
