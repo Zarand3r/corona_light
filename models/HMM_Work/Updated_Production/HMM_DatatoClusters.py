@@ -182,11 +182,6 @@ def main():
     NYT_W = NYT_daily_Warp
     JHU = JHU_daily
     
-    #Original dataset, making into list of np arrays
-    NYT_daily_Warp_Death = [np.array(x) for x in NYT_daily_Warp_Death]
-    NYT_daily_Death_Filled = [np.array(x) for x in NYT_daily_Death_Filled]
-    JHU_daily_death = [np.array(x) for x in JHU_daily_death]
-    
     #Saving the death data files
     f = open('NYT_daily_Warp_Death.txt', 'w')
     simplejson.dump(NYT_daily_Warp_Death, f)
@@ -197,6 +192,12 @@ def main():
     h = open('JHU_daily_death.txt', 'w')
     simplejson.dump(JHU_daily_death, h)
     h.close()
+    
+    #Original dataset, making into list of np arrays
+    NYT_daily_Warp_Death = [np.array(x) for x in NYT_daily_Warp_Death]
+    NYT_daily_Death_Filled = [np.array(x) for x in NYT_daily_Death_Filled]
+    JHU_daily_death = [np.array(x) for x in JHU_daily_death]
+    
 
     #Z normalization of our dataset
     Series_NYT_W = [znormalize(x) for x in NYT_daily_Warp_Death]
