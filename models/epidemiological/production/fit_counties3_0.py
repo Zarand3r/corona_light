@@ -1203,10 +1203,11 @@ def fit_single_county(input_dict):
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 		county_tail_regime = len(county_data) + tail_regime
 		county_tail_regime = max(firstnonzero, county_tail_regime)
-		predictions0, death_pdf0, res0 = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
-		predictions, death_pdf, res = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=False, extrapolate=extrapolate, guesses=res0.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
-		if res is None:
-			predictions, death_pdf, res = predictions0, death_pdf0, res0
+		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+		if res is not None:
+			predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=False, extrapolate=extrapolate, guesses=res0.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=True, death_metric=death_metric)
+			if res2 is not None:
+				predictions, death_pdf, res = predictions2, death_pdf2, res2
 
 	else:
 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
