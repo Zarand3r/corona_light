@@ -645,6 +645,8 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 		(0, 0.01), (0.8*guesses[23],1.2*guesses[23])]
 		ranges = param_ranges+initial_ranges
 
+	if bias < 0:
+		bias = None
 
 	for boundary in [len(data)]:
 		res = least_squares(leastsq_qd, guesses, args=(data[:boundary],bias, bias_value, weight, fitQ, death_metric), bounds=np.transpose(np.array(ranges)))
@@ -1016,6 +1018,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 
 		dates = pd.to_datetime(county_data["date"].values)
 		county_policy_regime = policy_regime
+		policy_regime_change = -2*death_time
 		if bias or policy_regime:
 			policy_date = loader.query(policies, "FIPS", county)["stay at home"]
 			if len(policy_date) == 0:
@@ -1025,7 +1028,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 				policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
 				if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5):
 					county_policy_regime = False
-					policy_regime_change = None
+					policy_regime_change = -2*death_time
 
 		if county_policy_regime:
 			county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
