@@ -152,7 +152,7 @@ def evaluator(submission, start_date):
 
 if __name__ == '__main__':
 	# start_date should be 14 days before the latest date, which should be the last day of data
-	start_date = '2020-05-06'
+	start_date = '2020-05-07'
 	latest_date = '2020-05-20'
 	# old_submissions = ['../old_submissions/submission3_0_0.csv', '../old_submissions/submission3_0_1.csv', '../old_submissions/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
 	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 		date = row["id"][0:10]
 		day = date.split('-')[-1]
 		month = date.split('-')[-2]
-		if county not in scored_counties or int(day) < int(latest_date.split('-')[-1]) or int(month) < int(latest_date.split('-')[-2]):
+		if county not in scored_counties or int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
 			optimal_file_index = -1
 			ultimate_submission.append(list(row.values))
 			continue
