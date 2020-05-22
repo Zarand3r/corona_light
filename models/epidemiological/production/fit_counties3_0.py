@@ -567,8 +567,8 @@ def fill_nonconvergent(nonconvergent, data, end, error_start=0, fix_nonconvergen
 				# latest_D = deaths[-1]
 				# bound = (1 + percentile/200)*latest_D
 				bound = np.mean(deaths)
-				predictions = [bound for i in range(int(14))]
-				predictions = predictions + [0 for i in range(int(extrapolate-14+start))]
+				predictions = [bound for i in range(int(14)+start)]
+				predictions = predictions + [0 for i in range(int(extrapolate-14))]
 				forecast = list(np.concatenate((deaths, predictions)))
 				death_cdf.append(forecast)
 		else:

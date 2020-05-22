@@ -192,7 +192,11 @@ if __name__ == '__main__':
 		date = row["id"][0:10]
 		day = date.split('-')[-1]
 		month = date.split('-')[-2]
-		if county not in scored_counties or int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
+		# if county not in scored_counties or int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
+		# 	optimal_file_index = -1
+		# 	ultimate_submission.append(list(row.values))
+		# 	continue
+		if county not in scored_counties:
 			optimal_file_index = -1
 			ultimate_submission.append(list(row.values))
 			continue
@@ -212,6 +216,7 @@ if __name__ == '__main__':
 	combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
 	combined.to_csv(output_file, index=False)
 
+	evaluator("combined.csv", start_date)
 	evaluator("combined.csv", latest_date)
 
 
