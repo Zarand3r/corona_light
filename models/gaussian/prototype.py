@@ -155,9 +155,19 @@ def posterior_predictive(X_s, X_train, Y_train, l=1.0, sigma_f=1.0, sigma_y=1e-8
 	return mu_s, cov_s
 
 
-def calculate_noise():
+def calculate_noise(county_data, death_metric):
 	# find standard deviation away from moving average
-	return
+	firstnonzero = next((index for index,value in enumerate(county_data[death_metric].values) if value != 0), None)
+	actual_deaths = (county_data['deaths'].values)[firstnonzero:]
+	moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
+	residuals = []
+	for index in range(1, len(actual_deaths)):
+		moving_change = moving_deaths[index] - moving_deaths[index-1]
+		if moving_change > 0:
+			residue = actual_deaths[index] - moving_deaths[index]
+			residue = residue/moving_change
+			residuals.append(residue)
+	return np.std(residuals)
 
 
 ###########################################################
@@ -293,29 +303,32 @@ def fit_single_county(input_dict):
 	policies = input_dict["policies"]
 	county = input_dict["county"]
 	end = input_dict["end"]
+	death_metric = input_dict["death_metric"]
 
 	county_data = loader.query(us, "fips", county)
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
 	county_data = county_data[2:]
+	if len(county_data) == 0:
+		return None
 
 	dates = pd.to_datetime(county_data["date"].values)
 	extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 
-	X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
-	X_train = np.arange(0, len(county_data)).reshape(-1, 1)
-	Y_train = county_data[death_metric].values
+	noise = calculate_noise(county_data, death_metric=death_metric)
+	print(noise)
+	# X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+	# X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+	# Y_train = county_data[death_metric].values
 
+	# # Try using object oriented design. 
+	# # Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
+	# # To get results (death_cdf), call its main function below, and return them in the tuple
 
-	# Try using object oriented design. 
-	# Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
-	# To get results (death_cdf), call its main function below, and return them in the tuple
+	# death_cdf = []
+	# return (dates, death_cdf, county) 
+	return None
 
-
-
-	death_cdf = []
-	return (dates, death_cdf, county) 
-
-def multi_submission(end):
+def multi_submission(end, death_metric="deaths"):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = []
@@ -325,7 +338,7 @@ def multi_submission(end):
 	us = loader.load_data("/models/gaussian/us_training_data.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"][0:10]
+	fips_list = fips_key["FIPS"][100:110]
 
 	data = []
 	for index, county in enumerate(fips_list):
@@ -334,6 +347,7 @@ def multi_submission(end):
 		input_dict["policies"] = policies
 		input_dict["county"] = county
 		input_dict["end"] = end
+		input_dict["death_metric"] = death_metric
 		data.append(input_dict)
 	
 	pool = Pool(os.cpu_count())
@@ -352,8 +366,8 @@ def multi_submission(end):
 
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	test2(end, death_metric="avg_deaths")
-	# test1(end, death_metric="avg_deaths")
+	# test2(end, death_metric="avg_deaths")
+	multi_submission(end)
 
 
 
