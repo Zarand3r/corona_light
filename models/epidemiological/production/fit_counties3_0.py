@@ -1096,7 +1096,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 
 	if len(nonconvergent) > 0:
 		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end) 
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, error_start=error_start) 
 		counties_dates = counties_dates + counties_dates_non
 		for death_cdf in counties_death_errors_non:
 			counties_death_errors.append(death_cdf)
@@ -1294,7 +1294,7 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 
 	if len(nonconvergent) > 0:
 		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, fix_nonconvergent=fix_nonconvergent) 
+		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, error_start=error_start, fix_nonconvergent=fix_nonconvergent) 
 		counties_dates = counties_dates + counties_dates_non
 		for death_cdf in counties_death_errors_non:
 			counties_death_errors.append(death_cdf)
