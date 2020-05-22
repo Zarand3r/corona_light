@@ -173,7 +173,7 @@ if __name__ == '__main__':
 			if score[county] < best:
 				best = score[county]
 				best_index = index
-		print(f"{county} has submission {best_index}scores {best} over {baseline[county]}")
+		print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
 		optimal_submission[county] = best_index
 
 	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_baseline.csv'

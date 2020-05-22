@@ -28,6 +28,76 @@ import loader
 
 death_time = 14
 
+###########################################################
+def test_sklearn(end, death_metric="deaths"):
+	from sklearn import gaussian_process
+	from sklearn.gaussian_process import GaussianProcessRegressor
+	from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
+
+	counties_dates = []
+	counties_death_errors = []
+	counties_fips = []
+
+	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
+	us = loader.load_data("/models/gaussian/us_training_data.csv")
+	policies = loader.load_data("/data/us/other/policies.csv")
+	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
+	# fips_list = fips_key["FIPS"][0:10]
+	fips_list = [36061] #56013,1017
+	total = len(fips_list)
+
+	for index, county in enumerate(fips_list):
+		print(f"{index+1} / {total}")
+		county_data = loader.query(us, "fips", county)
+		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
+		county_data = county_data[2:]
+
+		dates = pd.to_datetime(county_data["date"].values)
+		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+		print(extrapolate)
+
+		# X = np.arange(0, len(county_data)+extrapolate)
+		X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+		X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+		Y_train = county_data[death_metric].values
+
+
+
+		# kernel = ConstantKernel() + Matern(length_scale=1, nu=3/2) + WhiteKernel(noise_level=1)
+		# kernel = WhiteKernel(noise_level=1)
+		# gp = gaussian_process.GaussianProcessRegressor(kernel=kernel)
+		# gp.fit(X_train, Y_train)
+		# GaussianProcessRegressor(alpha=1e-10, copy_X_train=True,
+		# kernel=1**2 + Matern(length_scale=2, nu=1.5) + WhiteKernel(noise_level=1),
+		# n_restarts_optimizer=1, normalize_y=False,
+		# optimizer='fmin_l_bfgs_b', random_state=None)
+		# y_pred, sigma = gp.predict(X_pred, return_std=True)
+
+		clf = GaussianProcessRegressor(random_state=42, alpha=0.1)
+		clf.fit(X_train, Y_train)
+		y_pred, sigma = clf.predict(X_pred, return_std=True)
+
+		# Plot the function, the prediction and the 95% confidence interval based on
+		# the MSE
+		plt.figure()
+		plt.scatter(X_train, Y_train, c='b', label="Daily Deaths")
+		plt.plot(X_pred, y_pred, label="Prediction")
+		plt.fill_between(X_pred[:, 0], y_pred - sigma, y_pred + sigma,
+				 alpha=0.5, color='blue')
+
+		# plt.plot(x, f(x), 'r:', label=r'$f(x) = x\,\sin(x)$')
+		# plt.errorbar(X.ravel(), y, dy, fmt='r.', markersize=10, label='Observations')
+		# plt.plot(x_pred, y_pred, 'b-', label='Prediction')
+		# plt.fill(np.concatenate([x, x[::-1]]),
+		#          np.concatenate([y_pred - 1.9600 * sigma,
+		#                         (y_pred + 1.9600 * sigma)[::-1]]),
+		#          alpha=.5, fc='b', ec='None', label='95% confidence interval')
+
+		plt.legend(loc='upper left')
+		plt.show()
+		
+###########################################################
+
 def process_data(data_covid, data_population, save=True):
 	covid = loader.load_data(data_covid)
 	loader.convert_dates(covid, "date")
@@ -162,85 +232,21 @@ def calculate_noise(county_data, death_metric):
 	moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
 	residuals = []
 	for index in range(1, len(actual_deaths)):
-		moving_change = moving_deaths[index] - moving_deaths[index-1]
-		if moving_change > 0:
-			residue = actual_deaths[index] - moving_deaths[index]
-			residue = residue/moving_change
+		if moving_deaths[index] > 0:
+			residue = actual_deaths[index]/moving_deaths[index]
+			residue = residue/(moving_deaths[index])
 			residuals.append(residue)
 	return np.std(residuals)
 
+def fit(X_train, Y_train, X_pred, noise, params=[6.0, 0.1, 0.2]):
+	(l, sigma_f, sigma_y) = params
+	mu_s, cov_s = posterior_predictive(X_pred, X_train, Y_train, l=l, sigma_f=sigma_f, sigma_y=sigma_y, noise=noise)
+	return mu_s, cov_s
+
 
 ###########################################################
-def test1(end, death_metric="deaths"):
-	from sklearn import gaussian_process
-	from sklearn.gaussian_process import GaussianProcessRegressor
-	from sklearn.gaussian_process.kernels import Matern, WhiteKernel, ConstantKernel
 
-	counties_dates = []
-	counties_death_errors = []
-	counties_fips = []
-
-	# us = process_data("/data/us/covid/nyt_us_counties_daily.csv", "/data/us/demographics/county_populations.csv")
-	us = loader.load_data("/models/gaussian/us_training_data.csv")
-	policies = loader.load_data("/data/us/other/policies.csv")
-	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	# fips_list = fips_key["FIPS"][0:10]
-	fips_list = [36061] #56013,1017
-	total = len(fips_list)
-
-	for index, county in enumerate(fips_list):
-		print(f"{index+1} / {total}")
-		county_data = loader.query(us, "fips", county)
-		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-		county_data = county_data[2:]
-
-		dates = pd.to_datetime(county_data["date"].values)
-		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-		print(extrapolate)
-
-		# X = np.arange(0, len(county_data)+extrapolate)
-		X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
-		X_train = np.arange(0, len(county_data)).reshape(-1, 1)
-		Y_train = county_data[death_metric].values
-
-
-
-		# kernel = ConstantKernel() + Matern(length_scale=1, nu=3/2) + WhiteKernel(noise_level=1)
-		# kernel = WhiteKernel(noise_level=1)
-		# gp = gaussian_process.GaussianProcessRegressor(kernel=kernel)
-		# gp.fit(X_train, Y_train)
-		# GaussianProcessRegressor(alpha=1e-10, copy_X_train=True,
-		# kernel=1**2 + Matern(length_scale=2, nu=1.5) + WhiteKernel(noise_level=1),
-		# n_restarts_optimizer=1, normalize_y=False,
-		# optimizer='fmin_l_bfgs_b', random_state=None)
-		# y_pred, sigma = gp.predict(X_pred, return_std=True)
-
-		clf = GaussianProcessRegressor(random_state=42, alpha=0.1)
-		clf.fit(X_train, Y_train)
-		y_pred, sigma = clf.predict(X_pred, return_std=True)
-
-		# Plot the function, the prediction and the 95% confidence interval based on
-		# the MSE
-		plt.figure()
-		plt.scatter(X_train, Y_train, c='b', label="Daily Deaths")
-		plt.plot(X_pred, y_pred, label="Prediction")
-		plt.fill_between(X_pred[:, 0], y_pred - sigma, y_pred + sigma,
-				 alpha=0.5, color='blue')
-
-		# plt.plot(x, f(x), 'r:', label=r'$f(x) = x\,\sin(x)$')
-		# plt.errorbar(X.ravel(), y, dy, fmt='r.', markersize=10, label='Observations')
-		# plt.plot(x_pred, y_pred, 'b-', label='Prediction')
-		# plt.fill(np.concatenate([x, x[::-1]]),
-		#          np.concatenate([y_pred - 1.9600 * sigma,
-		#                         (y_pred + 1.9600 * sigma)[::-1]]),
-		#          alpha=.5, fc='b', ec='None', label='95% confidence interval')
-
-		plt.legend(loc='upper left')
-		plt.show()
-		
-
-
-def test2(end, death_metric="deaths"):
+def test(end, death_metric="deaths"):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = []
@@ -315,14 +321,16 @@ def fit_single_county(input_dict):
 	extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 
 	noise = calculate_noise(county_data, death_metric=death_metric)
-	print(noise)
-	# X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
-	# X_train = np.arange(0, len(county_data)).reshape(-1, 1)
-	# Y_train = county_data[death_metric].values
+	X_pred = np.arange(0, len(county_data)+extrapolate).reshape(-1,1)
+	X_train = np.arange(0, len(county_data)).reshape(-1, 1)
+	Y_train = county_data[death_metric].values
 
-	# # Try using object oriented design. 
-	# # Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
-	# # To get results (death_cdf), call its main function below, and return them in the tuple
+	mean, std_error = fit(X_train, Y_train, X_pred, noise)
+	print(mean[len(county_data):])
+
+	# Try using object oriented design. 
+	# Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
+	# To get results (death_cdf), call its main function below, and return them in the tuple
 
 	# death_cdf = []
 	# return (dates, death_cdf, county) 
@@ -338,7 +346,8 @@ def multi_submission(end, death_metric="deaths"):
 	us = loader.load_data("/models/gaussian/us_training_data.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"][100:110]
+	# fips_list = fips_key["FIPS"]
+	fips_list = [36061]
 
 	data = []
 	for index, county in enumerate(fips_list):
@@ -366,7 +375,7 @@ def multi_submission(end, death_metric="deaths"):
 
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	# test2(end, death_metric="avg_deaths")
+	# test(end, death_metric="avg_deaths")
 	multi_submission(end)
 
 

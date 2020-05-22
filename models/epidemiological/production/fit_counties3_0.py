@@ -563,10 +563,19 @@ def fill_nonconvergent(nonconvergent, data, end, error_start=0, fix_nonconvergen
 				deaths = deaths[:error_start]
 				start = abs(error_start)
 
-			for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
+			for percentile in [10, 20, 30, 40, 50, 60, 70]: #make this a separate function
 				# latest_D = deaths[-1]
 				# bound = (1 + percentile/200)*latest_D
-				bound = np.mean(deaths)
+				predictions = [0 for i in range(int(14)+start)]
+				predictions = predictions + [0 for i in range(int(extrapolate-14))]
+				forecast = list(np.concatenate((deaths, predictions)))
+				death_cdf.append(forecast)
+
+			for percentile in [80, 90]:
+				if percentile == 80:
+					bound = np.mean(deaths)
+				else:
+					bound = np.mean([d for d in deaths if d>0])
 				predictions = [bound for i in range(int(14)+start)]
 				predictions = predictions + [0 for i in range(int(extrapolate-14))]
 				forecast = list(np.concatenate((deaths, predictions)))
