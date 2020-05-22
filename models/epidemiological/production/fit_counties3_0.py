@@ -544,13 +544,13 @@ def test_convergence(data_length, pop, predictions):
 		converge = False
 	return converge	
 
-def fill_nonconvergent(nonconvergent, data, end, fix_nonconvergent=False):
+def fill_nonconvergent(nonconvergent, data, end, error_start=0, fix_nonconvergent=False):
 	counties_dates = []
 	counties_death_errors = []
 	counties_fips = nonconvergent
 	for index, county in enumerate(nonconvergent):
-		if len(str(county)) == 4:
-			county = int('0'+str(county))
+		# if len(str(county)) == 4:
+		# 	county = int('0'+str(county))
 		county_data = loader.query(data, "fips", county)
 		deaths = county_data["deaths"].values
 		dates = pd.to_datetime(county_data["date"].values)
@@ -558,12 +558,17 @@ def fill_nonconvergent(nonconvergent, data, end, fix_nonconvergent=False):
 
 		death_cdf = []
 		if fix_nonconvergent:
-			latest_D = deaths[-1]
+			start = 0
+			if error_start is not None and error_start < 0:
+				deaths = deaths[:error_start]
+				start = abs(error_start)
+
 			for percentile in [10, 20, 30, 40, 50, 60, 70, 80, 90]: #make this a separate function
+				# latest_D = deaths[-1]
 				# bound = (1 + percentile/200)*latest_D
 				bound = np.mean(deaths)
 				predictions = [bound for i in range(int(14))]
-				predictions = predictions + [0 for i in range(int(extrapolate-14))]
+				predictions = predictions + [0 for i in range(int(extrapolate-14+start))]
 				forecast = list(np.concatenate((deaths, predictions)))
 				death_cdf.append(forecast)
 		else:

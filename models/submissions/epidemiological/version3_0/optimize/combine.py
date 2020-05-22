@@ -159,8 +159,8 @@ if __name__ == '__main__':
 	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
 	scores = []
 	
-	for submission in new_submissions:
-		score = evaluator(submission, latest_date)
+	for submission in old_submissions:
+		score = evaluator(submission, start_date)
 		scores.append(score)
 
 	baseline = scores[0]
@@ -173,10 +173,8 @@ if __name__ == '__main__':
 			if score[county] < best:
 				best = score[county]
 				best_index = index
-			if best_index == 3:
-				print(county)
+		print(f"{county} has submission {best_index}scores {best} over {baseline[county]}")
 		optimal_submission[county] = best_index
-
 
 	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_baseline.csv'
 	new_submissions.append(baseline_submission)
