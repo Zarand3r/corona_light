@@ -114,21 +114,22 @@ def get_death_cdf(death_pdf, extrapolate, switch=True):
 		end = len(death_cdf[-1])
 		if extrapolate >= 14:
 			end = end - extrapolate + 14
-		max_total = death_cdf[-1][-1*(extrapolate-1):end]
-		max_total_previous = death_cdf[-1][-1*(extrapolate):end-1]
-		min_total = death_cdf[0][-1*(extrapolate-1):end]
-		min_total_previous = death_cdf[0][-1*(extrapolate):end-1]
-		max_daily_change = [i - j for i, j in zip(max_total, max_total_previous)]
-		min_daily_change = [i - j for i, j in zip(min_total, min_total_previous)]
-		expected_total = death_cdf[4][-1*(extrapolate-1):end]
-		expected__total_previous = death_cdf[4][-1*(extrapolate):end-1]
-		expected__daily_change = [i - j for i, j in zip(expected_total, expected__total_previous)]
+		# max_total = death_cdf[-1][-1*(extrapolate-1):end]
+		# max_total_previous = death_cdf[-1][-1*(extrapolate):end-1]
+		# min_total = death_cdf[0][-1*(extrapolate-1):end]
+		# min_total_previous = death_cdf[0][-1*(extrapolate):end-1]
+		# max_daily_change = [i - j for i, j in zip(max_total, max_total_previous)]
+		# min_daily_change = [i - j for i, j in zip(min_total, min_total_previous)]
+		# expected_total = death_cdf[4][-1*(extrapolate-1):end]
+		max_daily_change = death_cdf[-1][-1*(extrapolate-1):end]
+		min_daily_change = death_cdf[0][-1*(extrapolate-1):end]
+		expected_daily_change = death_cdf[4][-1*(extrapolate-1):end]
 
-		expected = np.mean(expected__daily_change)
+		expected = np.mean(expected_daily_change)
 		diff = np.mean(np.array(max_daily_change)-np.array(min_daily_change))
 		# ratio = np.mean(np.array(max_daily_change)/np.array(min_daily_change))
 		ratio = diff/expected
-		if ratio > 0.5:
+		if ratio > 1.5:
 			print("recalculate error bounds")
 			# See how general these parameter variances are
 			# [1.16498627e-05 2.06999186e-05 5.41782152e-04 6.49380289e-06
@@ -154,18 +155,18 @@ def reject_outliers(data, m = 1.):
 #     return data[abs(data - np.mean(data)) < m * np.std(data)]
 
 # returns standard deviation of fitted parameters
-def get_param_errors(res, pop):
+def get_param_errors(res, residuals):
 	pfit = res.x
 	pcov = res.jac
 	pcov = np.dot(pcov.T, pcov)
 	pcov = np.linalg.pinv(pcov) #uses svd
 	pcov = np.diag(pcov)
-	rcov = np.cov(res.fun)/pop ##put res.fun/pop inside
-	# scaler = res.cost*len(res.fun)/pop 
-	# rcov = rcov * scaler
+	# residuals = (residuals - residuals.min()) / (residuals.max() - residuals.min())
+	rcov = np.cov(residuals)
 	perr = pcov * rcov
 	perr = np.sqrt(perr)
 	return perr
+
 
 ###########################################################
 
@@ -377,10 +378,6 @@ def quickie(fit, data, guess_bounds, error_start=-1):
 
 # returns uncertainty of the fit for all variables
 def get_fit_errors(res, p0_params, data, extrapolate=14, error_start=-1, quick=False, tail=False, death_metric="deaths"):
-	population = list(data["Population"])[-1]
-	errors = get_param_errors(res, population)
-	errors[len(p0_params):] = 0
-
 	if error_start is None:
 		error_start = -1*len(data)+1
 
@@ -411,15 +408,23 @@ def get_fit_errors(res, p0_params, data, extrapolate=14, error_start=-1, quick=F
 				# 		death_series[index] = None
 				uncertainty.append(death_series)
 		else:
+			population = list(data["Population"])[-1]
+			initial = 0
+			if tail:
+				initial = tail
+			initial_residuals = np.zeros(initial)
+			residuals = (data[death_metric].values)[initial:] - fit[initial:len(data),7]
+			residuals = np.concatenate((initial_residuals,residuals))
+			errors = get_param_errors(res, residuals)
+			errors[len(p0_params):] = 0
 			for i in range(samples):
 				sample = np.random.normal(loc=res.x, scale=errors)
 				death_series = model_beyond(fit, sample, data, guess_bounds, extrapolate, error_start=error_start)
-				latest_D = (data[death_metric].values)[-1]
 				# death_series = np.concatenate((fit[:,7][0:len(data)-1], death_series))
 				# death_series = np.concatenate((data[death_metric].values[0:len(data)], death_series[-1*error_start:]))
 				death_series = np.concatenate((data["daily_deaths"].values[0:len(data)+error_start], death_series))
 				for index, death in enumerate(death_series):
-					if index >= len(data) and death <= latest_D:
+					if death < 0:
 						death_series[index] = None
 				uncertainty.append(death_series)
 	else: 
@@ -987,7 +992,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [36061] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [34017] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1084,6 +1089,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 			# add to nonconvergent counties
 			nonconvergent.append(county)
 			continue
+		print(list(res.x))
 
 		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
 		if death_cdf is None:
@@ -1316,12 +1322,28 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
-	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
-	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
-	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	# guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	# 9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	# 4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	# 3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 
-	test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	guesses = [3.26346655e-01, 6.57656170e-02, 1.72833477e-01, 4.51698345e-01, 4.03987536e-01, 4.15975019e-02,	\
+	2.22208127e-02, 3.37385446e-02, 5.29119649e-01, 4.54705614e-04, 8.19568301e-03, 1.74608476e-01,	\
+	6.44116005e-03, 1.52073678e-01, 1.27747706e-01, 5.91517897e-08, 1.15107165e-03, 8.54823141e-01,	\
+	1.01171698e-01, 3.52743362e-10, 2.11225346e-02, 1.34426338e-18, 4.25844474e-05, 7.02140155e-06]
+
+	# guesses = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
+	# 0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
+	# 0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
+	# 4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
+	# 0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
+
+	# guesses = None
+
+	test(end, bias=False, policy_regime=False, tail_regime=False, weight=False, plot=True, guesses=guesses, error_start=-14, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
 
 
 
