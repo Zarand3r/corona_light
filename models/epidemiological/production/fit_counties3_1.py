@@ -969,7 +969,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [34017, 27053] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [36061] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):

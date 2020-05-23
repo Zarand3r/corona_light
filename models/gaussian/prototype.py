@@ -1,4 +1,5 @@
 import os
+import math
 import datetime
 import itertools
 from multiprocessing import Pool
@@ -227,16 +228,29 @@ def posterior_predictive(X_s, X_train, Y_train, l=1.0, sigma_f=1.0, sigma_y=1e-8
 
 def calculate_noise(county_data, death_metric):
 	# find standard deviation away from moving average
+	# firstnonzero = next((index for index,value in enumerate(county_data[death_metric].values) if value != 0), None)
+	# actual_deaths = (county_data['deaths'].values)[firstnonzero:]
+	# moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
+	# residuals = []
+	# for index in range(1, len(actual_deaths)):
+	# 	if moving_deaths[index] > 0:
+	# 		residue = actual_deaths[index]/moving_deaths[index]
+	# 		residue = residue/(moving_deaths[index])
+	# 		residuals.append(residue)
+	# noise = np.std(residuals)
+	# noise = noise * np.mean(county_data['avg_deaths'])
+	# return noise
+
 	firstnonzero = next((index for index,value in enumerate(county_data[death_metric].values) if value != 0), None)
 	actual_deaths = (county_data['deaths'].values)[firstnonzero:]
 	moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
 	residuals = []
 	for index in range(1, len(actual_deaths)):
 		if moving_deaths[index] > 0:
-			residue = actual_deaths[index]/moving_deaths[index]
-			residue = residue/(moving_deaths[index])
+			residue = actual_deaths[index]-moving_deaths[index]
 			residuals.append(residue)
-	return np.std(residuals)
+	noise = math.sqrt(np.std(residuals))
+	return noise
 
 def fit(X_train, Y_train, X_pred, noise, params=[6.0, 0.1, 0.2]):
 	(l, sigma_f, sigma_y) = params
@@ -255,7 +269,7 @@ def test(end, death_metric="deaths"):
 	us = loader.load_data("/models/gaussian/us_training_data.csv")
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	# fips_list = fips_key["FIPS"][0:10]
+	# fips_list = fips_key["FIPS"]
 	fips_list = [36061] #56013,1017
 	total = len(fips_list)
 
@@ -273,7 +287,7 @@ def test(end, death_metric="deaths"):
 		X_train = np.arange(0, len(county_data)).reshape(-1, 1)
 		Y_train = county_data[death_metric].values
 
-		noise = 20
+		noise = calculate_noise(county_data, death_metric=death_metric)
 		# Compute mean and covariance of the posterior predictive distribution
 		# mu_s, cov_s = posterior_predictive(X_pred, X_train, Y_train, sigma_y=noise)
 		# samples = np.random.multivariate_normal(mu_s.ravel(), cov_s, 3)
@@ -296,7 +310,6 @@ def test(end, death_metric="deaths"):
 			plt.title(f'l = {l}, sigma_f = {sigma_f}, sigma_y = {sigma_y}')
 			# plot_gp(mu_s, cov_s, X_pred, X_train=X_train, Y_train=Y_train)
 			samples = np.random.multivariate_normal(mu_s.ravel(), cov_s, 3)
-			print(cov_s)
 			plot_gp(mu_s, cov_s, X_pred, X_train=X_train, Y_train=Y_train, samples=samples, name=f"figures/{county}_{death_metric}test.png")
 		plt.show()
 
@@ -325,16 +338,19 @@ def fit_single_county(input_dict):
 	X_train = np.arange(0, len(county_data)).reshape(-1, 1)
 	Y_train = county_data[death_metric].values
 
-	mean, std_error = fit(X_train, Y_train, X_pred, noise)
-	print(mean[len(county_data):])
+	predictions, cov = fit(X_train, Y_train, X_pred, noise)
+	std_error = np.sqrt(np.diag(cov))
 
-	# Try using object oriented design. 
-	# Create an instance for each county, pass the county specific parameters as instance variables, so we dont have to keep passing them between functions
-	# To get results (death_cdf), call its main function below, and return them in the tuple
+	death_cdf = []
+	p_values = [-1.28155, -0.84162, -0.52440, -0.25335, 0, 0.25335, 0.52440, 0.84162, 1.28155]
+	for index, percentile in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90]):
+		uncertainty = p_values[index] * std_error
+		deaths = county_data["deaths"].values
+		bound = (predictions[len(county_data):]) + uncertainty[len(county_data):]
+		bound = np.concatenate((deaths, bound))
+		death_cdf.append(bound)
 
-	# death_cdf = []
-	# return (dates, death_cdf, county) 
-	return None
+	return (dates, death_cdf, county) 
 
 def multi_submission(end, death_metric="deaths"):
 	counties_dates = []
@@ -375,8 +391,9 @@ def multi_submission(end, death_metric="deaths"):
 
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	# test(end, death_metric="avg_deaths")
-	multi_submission(end)
+	test(end, death_metric="avg_deaths")
+	# output = multi_submission(end)
+	# print(output)
 
 
 
@@ -386,94 +403,3 @@ if __name__ == '__main__':
 
 
 
-
-
-
-
-
-# import numpy as np
-# from matplotlib import pyplot as plt
-
-# from sklearn.gaussian_process import GaussianProcessRegressor
-# from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-
-# np.random.seed(1)
-
-
-# def f(x):
-#     """The function to predict."""
-#     return x * np.sin(x)
-
-# # ----------------------------------------------------------------------
-# #  First the noiseless case
-# X = np.atleast_2d([1., 3., 5., 6., 7., 8.]).T
-
-# # Observations
-# y = f(X).ravel()
-
-# # Mesh the input space for evaluations of the real function, the prediction and
-# # its MSE
-# x = np.atleast_2d(np.linspace(0, 10, 1000)).T
-
-# # Instantiate a Gaussian Process model
-# kernel = C(1.0, (1e-3, 1e3)) * RBF(10, (1e-2, 1e2))
-# gp = GaussianProcessRegressor(kernel=kernel, n_restarts_optimizer=9)
-
-# # Fit to data using Maximum Likelihood Estimation of the parameters
-# gp.fit(X, y)
-
-# # Make the prediction on the meshed x-axis (ask for MSE as well)
-# y_pred, sigma = gp.predict(x, return_std=True)
-
-# # Plot the function, the prediction and the 95% confidence interval based on
-# # the MSE
-# plt.figure()
-# plt.plot(x, f(x), 'r:', label=r'$f(x) = x\,\sin(x)$')
-# plt.plot(X, y, 'r.', markersize=10, label='Observations')
-# plt.plot(x, y_pred, 'b-', label='Prediction')
-# plt.fill(np.concatenate([x, x[::-1]]),
-#          np.concatenate([y_pred - 1.9600 * sigma,
-#                         (y_pred + 1.9600 * sigma)[::-1]]),
-#          alpha=.5, fc='b', ec='None', label='95% confidence interval')
-# plt.xlabel('$x$')
-# plt.ylabel('$f(x)$')
-# plt.ylim(-10, 20)
-# plt.legend(loc='upper left')
-
-# # ----------------------------------------------------------------------
-# # now the noisy case
-# X = np.linspace(0.1, 9.9, 20)
-# X = np.atleast_2d(X).T
-
-# # Observations and noise
-# y = f(X).ravel()
-# dy = 0.5 + 1.0 * np.random.random(y.shape)
-# noise = np.random.normal(0, dy)
-# y += noise
-
-# # Instantiate a Gaussian Process model
-# gp = GaussianProcessRegressor(kernel=kernel, alpha=dy ** 2,
-#                               n_restarts_optimizer=10)
-
-# # Fit to data using Maximum Likelihood Estimation of the parameters
-# gp.fit(X, y)
-
-# # Make the prediction on the meshed x-axis (ask for MSE as well)
-# y_pred, sigma = gp.predict(x, return_std=True)
-
-# # Plot the function, the prediction and the 95% confidence interval based on
-# # the MSE
-# plt.figure()
-# plt.plot(x, f(x), 'r:', label=r'$f(x) = x\,\sin(x)$')
-# plt.errorbar(X.ravel(), y, dy, fmt='r.', markersize=10, label='Observations')
-# plt.plot(x, y_pred, 'b-', label='Prediction')
-# plt.fill(np.concatenate([x, x[::-1]]),
-#          np.concatenate([y_pred - 1.9600 * sigma,
-#                         (y_pred + 1.9600 * sigma)[::-1]]),
-#          alpha=.5, fc='b', ec='None', label='95% confidence interval')
-# plt.xlabel('$x$')
-# plt.ylabel('$f(x)$')
-# plt.ylim(-10, 20)
-# plt.legend(loc='upper left')
-
-# plt.show()
