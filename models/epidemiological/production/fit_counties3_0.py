@@ -1181,7 +1181,7 @@ def fit_single_county(input_dict):
 				residue = actual_deaths[index] - moving_deaths[index]
 				residue = residue/moving_change
 				residuals.append(residue)
-		if np.std(residuals) >= 0.2:
+		if np.std(residuals) >= 0.25:
 			death_metric = "avg_deaths"
 
 	dates = pd.to_datetime(county_data["date"].values)
