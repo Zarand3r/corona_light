@@ -11,6 +11,10 @@ repo = git.Repo("./", search_parent_directories=True)
 homedir = repo.working_dir
 sys.path.insert(1, f"{homedir}" + '/models/data_processing')
 import loader
+sys.path.insert(0, f"{homedir}" + '/models/submissions/processing/')
+sys.path.insert(1, f"{homedir}" + '/models/epidemiological/production')
+import fit_counties3_1
+import formatter2
 
 def get_date(x):
 	return '-'.join(x.split('-')[:3])
@@ -150,6 +154,33 @@ def evaluator(submission, start_date):
 
 	return county_losses
 
+
+def generate_submission(combined_parameters, end, bias=False, weight=True, quick=True, error_start=-14, tail=False, fix_nonconvergent=False, sub_id="3_1_0"):
+	start = datetime.datetime(2020, 4, 1)
+	end = datetime.datetime(2020, 6, 30)
+	submission = []
+	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	output_dict = fit_counties3_1.multi_generate_confidence(combined_parameters, end, bias=bias, weight=weight, quick=quick, error_start=error_start, tail=tail, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitQ
+	counties_dates = output_dict["counties_dates"]
+	counties_death_errors = output_dict["counties_death_errors"]
+	counties_fips = output_dict["counties_fips"]
+	nonconvergent = output_dict["nonconvergent"]
+	for i in range(len(counties_fips)):
+		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
+		submission = submission + county_prediction
+	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/predictions3_1_0.csv'
+	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
+	with open(output_file, 'w') as submission_file:
+		writer = csv.writer(submission_file, delimiter=',')
+		writer.writerow(header)
+		writer.writerows(submission)
+
+	formatter2.reformat(output_file, save=True, fix=False, id=sub_id)
+
 if __name__ == '__main__':
 	# do the code for combine_preidctions first
 	# then do the code comparing different weight parameters 
@@ -157,17 +188,22 @@ if __name__ == '__main__':
 	start_date = '2020-05-07'
 	latest_date = '2020-05-19'
 	submissions = ['../epidemiological/version3_1/old_submissions/submission3_1_0.csv', '../epidemiological/version3_1/old_submissions/submission3_1_1.csv', '../epidemiological/version3_1/old_submissions/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
-	submissions_parameters = {0: {bias=False, adaptive=False, fix_nonconvergent=True}, 1: {bias=True, adaptive=False, fix_nonconvergent=False}, 2: {bias=True, adaptive=True, fix_nonconvergent=False}, 3: None}
+	submissions_args = {0: {bias=False, weight=False, regime_tail=True, regime_policy=False}, 1: {bias=True, adaptive=False, fix_nonconvergent=False}, 2: {bias=True, adaptive=True, fix_nonconvergent=False}, 3: None}
+	parameter_files = []
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
 	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
-	scores = []
 	
+	# generate the submission (predictions) files using getbounds=False for generate_submission sbatch scripts
+	scores = []
 	for submission in submissions:
 		score = evaluator(submission, start_date)
 		scores.append(score)
 
+	parameters = {}
+	for paramter_file in paramter_files:
+		print("to do")
+
 	baseline = scores[0]
-	optimal_submission = {}
 	combined_parameters = {}
 	for county in list(baseline.keys()):
 		best = baseline[county]
@@ -178,13 +214,39 @@ if __name__ == '__main__':
 				best_index = index
 			if best_index == 3:
 				print(county)
+		submission_parameters = parameters[best_index]
+		if county in list(submission_parameters.keys()):
+			county_parameters = submissions_args[best_index] 
+			county_parameters["params"] = submission_parameters[county]
+		else:
+			county_parameters = None
+		combined_parameters[county] = county_parameters
+
+	# generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
+	new_submissions = ['../epidemiological/version3_1/new_submissions/submission3_1_0.csv', '../epidemiological/version3_1/new_submissions/submission3_1_1.csv', '../epidemiological/version3_1/new_submissions/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
+
+	scores = []
+	for submission in new_submissions:
+		score = evaluator(submission, start_date)
+		scores.append(score)
+
+	baseline = scores[0]
+	scored_counties = list(baseline.keys())
+	optimal_submission = {}
+	for county in scored_counties:
+		best = baseline[county]
+		best_index = 0
+		for index, score in enumerate(scores):
+			if score[county] < best:
+				best = score[county]
+				best_index = index
+		print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
 		optimal_submission[county] = best_index
-		combined_parameters[county] = submissions_parameters[best_index] 
 
 
-
-
-
+	#### 
+	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/submission3_1_baseline.csv' #this will have to have errors, not just predictions
+	new_submissions.append(baseline_submission)
 	submission_files = []
 	for submission in new_submissions:
 		submission_file = pd.read_csv(submission, index_col=False)
@@ -197,13 +259,14 @@ if __name__ == '__main__':
 	for index, row in baseline_file.iterrows():
 		print(f"{index+1} / {total}")
 		county = row["id"].split('-')[-1]
+		date = row["id"][0:10]
+		day = date.split('-')[-1]
+		month = date.split('-')[-2]
+		if county not in scored_counties or int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
+			optimal_file_index = -1
+			ultimate_submission.append(list(row.values))
+			continue
 		optimal_file_index = optimal_submission[county]
-		if optimal_file_index == 3:
-			date = row["id"][0:10]
-			day = date.split('-')[-1]
-			month = date.split('-')[-2]
-			if int(day) <= int(latest_date.split('-')[-1]) or int(month) <= int(latest_date.split('-')[-2]):
-				optimal_file_index = 0
 		optimal_file = submission_files[optimal_file_index]
 		ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
 		
