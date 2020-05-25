@@ -688,7 +688,8 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 			if getbounds:
 				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 			else:
-				prediction_fit = [[point[1] for point in predictions]]
+				prediction_fit = [point[1] for point in predictions]
+				print(prediction_fit)
 				death_error = quickie(prediction_fit, data, None, error_start=None)
 				death_pdf.append(death_error)
 	return (predictions, death_pdf, res)
@@ -988,10 +989,10 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 			if getbounds:
 				death_pdf = get_fit_errors2(res, guesses[:17], original, data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 			else:
-				prediction_fit = [[point[1] for point in predictions]]
+				prediction_fit = [point[1] for point in predictions]
 				death_error = quickie(prediction_fit, data, None, error_start=None)
-				death_error = np.concatenate((data["daily_deaths"].values[0:1], death_pdf))
-				death_error = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_pdf))
+				death_error = np.concatenate((data["daily_deaths"].values[0:1], death_error))
+				death_error = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_error))
 				death_pdf.append(death_error)
 
 	return (predictions, death_pdf, res)
@@ -1292,7 +1293,7 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 	policies = loader.load_data("/data/us/other/policies.csv")
 	policies = policies.dropna(subset=['stay at home'])
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"]
+	fips_list = fips_key["FIPS"][100:120]
 
 	data = []
 	for county in fips_list:
