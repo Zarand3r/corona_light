@@ -163,7 +163,7 @@ def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=F
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	output_dict = fit_counties3_1.multi_generate_confidence(combined_parameters, end, quick=quick, error_start=error_start, tail=tail, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitQ
+	output_dict = fit_counties3_1.multi_generate_confidence(combined_parameters, end, quick=quick, error_start=error_start, tail=tail, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitsQ
 	counties_dates = output_dict["counties_dates"]
 	counties_death_errors = output_dict["counties_death_errors"]
 	counties_fips = output_dict["counties_fips"]
@@ -187,10 +187,10 @@ if __name__ == '__main__':
 	# Make this into a batch script to automate both 
 	start_date = '2020-05-07'
 	latest_date = '2020-05-19'
-	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission1_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_2.csv']
+	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_2.csv']
 	guesses1 = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
@@ -274,7 +274,7 @@ if __name__ == '__main__':
 
 
 	#### 
-	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission_baseline.csv' #this will have to have errors, not just predictions
+	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission_baseline.csv' #this will have to have errors, not just predictions
 	new_submissions.append(baseline_submission)
 	submission_files = []
 	for submission in new_submissions:
