@@ -155,7 +155,7 @@ def evaluator(submission, start_date):
 	return county_losses
 
 
-def generate_submission(combined_parameters, end, bias=False, weight=True, quick=True, error_start=-14, tail=False, fix_nonconvergent=False, sub_id="3_1_0"):
+def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=False, fix_nonconvergent=False, sub_id="0"):
 	start = datetime.datetime(2020, 4, 1)
 	end = datetime.datetime(2020, 6, 30)
 	submission = []
@@ -163,7 +163,7 @@ def generate_submission(combined_parameters, end, bias=False, weight=True, quick
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
 	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	output_dict = fit_counties3_1.multi_generate_confidence(combined_parameters, end, bias=bias, weight=weight, quick=quick, error_start=error_start, tail=tail, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitQ
+	output_dict = fit_counties3_1.multi_generate_confidence(combined_parameters, end, quick=quick, error_start=error_start, tail=tail, fix_nonconvergent=fix_nonconvergent) #do regime next but not ready for fitQ
 	counties_dates = output_dict["counties_dates"]
 	counties_death_errors = output_dict["counties_death_errors"]
 	counties_fips = output_dict["counties_fips"]
@@ -172,7 +172,7 @@ def generate_submission(combined_parameters, end, bias=False, weight=True, quick
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
-	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/predictions3_1_0.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/predictions{sub_id}.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
@@ -207,15 +207,27 @@ if __name__ == '__main__':
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
 	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
 	
-	parameter_files = []
+	parameter_files = [f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_2.csv']
 
 	scores = []
 	for submission in submissions:
 		score = evaluator(submission, start_date)
 		scores.append(score)
 
+	submission_parameters = []
+	for parameter_file in parameter_files:
+		input_path = parameter_file
+		fopen = open(input_path,'r')
+		data = fopen.read()
+		json_decoded = data.replace("'", "\"")
+		params_dict = json.loads(json_decoded)
+		submission_parameters.append(params_dict)
+
 	baseline = scores[0]
-	combined_parameters = {}
+	combined_args = {}
 	for county in list(baseline.keys()):
 		best = baseline[county]
 		best_index = 0
@@ -225,16 +237,22 @@ if __name__ == '__main__':
 				best_index = index
 			if best_index == 3:
 				print(county)
-		submission_parameters = submissions_args[best_index]
+		best_parameters = submission_parameters[best_index]
 		if county in list(submission_parameters.keys()):
-			county_parameters = submissions_args[best_index] 
-			county_parameters["params"] = submission_parameters[county]
+			county_args = submissions_args[best_index] 
+			county_args["params"] = best_parameters[county]
 		else:
-			county_parameters = None
-		combined_parameters[county] = county_parameters
+			county_args = None
+		combined_args[county] = county_args
+
+
+	# Now we have the best args for each county
 
 	# generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
-	new_submissions = ['../epidemiological/version3_1/new_submissions/submission3_1_0.csv', '../epidemiological/version3_1/new_submissions/submission3_1_1.csv', '../epidemiological/version3_1/new_submissions/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
+	generate_confidence(combined_args, quick=True, error_start=-14, tail=False, fix_nonconvergent=True, sub_id="1")
+	generate_confidence(combined_args, quick=True, error_start=-14, tail=True, fix_nonconvergent=False, sub_id="2")
+
+	new_submissions = ['../epidemiological/version3_1/confidences/submission1.csv', '../epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
 
 	scores = []
 	for submission in new_submissions:
@@ -256,16 +274,15 @@ if __name__ == '__main__':
 
 
 	#### 
-	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/submission3_1_baseline.csv' #this will have to have errors, not just predictions
+	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission_baseline.csv' #this will have to have errors, not just predictions
 	new_submissions.append(baseline_submission)
 	submission_files = []
 	for submission in new_submissions:
 		submission_file = pd.read_csv(submission, index_col=False)
 		submission_files.append(submission_file)
 
-	baseline_file = submission_files[0]
+	baseline_file = submission_files[-1]
 	ultimate_submission = []
-
 	total = len(baseline_file)
 	for index, row in baseline_file.iterrows():
 		print(f"{index+1} / {total}")
@@ -282,7 +299,7 @@ if __name__ == '__main__':
 		ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
 		
 
-	output_file = f'{homedir}/models/submissions/processing/combined.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/optimize/optimize_confidence.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
@@ -294,7 +311,7 @@ if __name__ == '__main__':
 	combined.to_csv(output_file, index=False)
 
 
-	evaluator("combined.csv", latest_date)
+	evaluator("optimize_confidence.csv", latest_date)
 
 
 

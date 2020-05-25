@@ -1450,7 +1450,7 @@ def generate_single_confidence(input_dict):
 
 
 
-def multi_generate_confidence(combined_parameters, end, bias=False, weight=True, quick=True, error_start=-14, tail=False, fix_nonconvergent=False):
+def multi_generate_confidence(combined_parameters, end, quick=True, error_start=-14, tail=False, fix_nonconvergent=False):
 	#Get date range of April1 to June30 inclusive. Figure out how much to extrapolate
 	counties_dates = []
 	counties_death_errors = []
@@ -1473,8 +1473,6 @@ def multi_generate_confidence(combined_parameters, end, bias=False, weight=True,
 		input_dict["policies"] = policies
 		input_dict["county"] = county
 		input_dict["end"] = end
-		input_dict["bias"] = bias
-		input_dict["weight"] = weight
 		input_dict["quick"] = quick
 		input_dict["error_start"] = error_start 
 		input_dict['tail'] = tail
