@@ -191,20 +191,28 @@ if __name__ == '__main__':
 	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_2.csv']
-	submissions_args = {0: {bias=False, weight=False, regime_tail=True, regime_policy=False}, 1: {bias=True, adaptive=False, fix_nonconvergent=False}, 2: {bias=True, adaptive=True, fix_nonconvergent=False}, 3: None}
-	parameter_files = []
+	guesses1 = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	guesses2 = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
+	0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
+	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
+	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
+	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
+	submissions_args = {0: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
+	2: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
+	3: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 4: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
+	5: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 5: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
 	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
 	
-	# generate the submission (predictions) files using getbounds=False for generate_submission sbatch scripts
+	parameter_files = []
+
 	scores = []
 	for submission in submissions:
 		score = evaluator(submission, start_date)
 		scores.append(score)
-
-	parameters = {}
-	for paramter_file in paramter_files:
-		print("to do")
 
 	baseline = scores[0]
 	combined_parameters = {}
@@ -217,7 +225,7 @@ if __name__ == '__main__':
 				best_index = index
 			if best_index == 3:
 				print(county)
-		submission_parameters = parameters[best_index]
+		submission_parameters = submissions_args[best_index]
 		if county in list(submission_parameters.keys()):
 			county_parameters = submissions_args[best_index] 
 			county_parameters["params"] = submission_parameters[county]

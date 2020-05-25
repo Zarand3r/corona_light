@@ -111,6 +111,12 @@ def generate_submission(start, end, guesses=None, bias=False, weight=False, poli
 		writer.writerows(submission)
 	formatter2.reformat(output_file, save=True, fix=False, id=sub_id)
 
+	import json
+	parameters= output_dict["parameters"]
+	parameter_file = f"{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters{sub_id}.csv"
+	with open(parameter_file, 'w') as file:
+		file.write(json.dumps(parameters))
+
 if __name__ == '__main__':
 	start = datetime.datetime(2020, 4, 1)
 	end = datetime.datetime(2020, 6, 30)

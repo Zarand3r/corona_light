@@ -1197,7 +1197,7 @@ def fit_single_county(input_dict):
 		else:
 			policy_date = int(policy_date.values[0])
 			policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
-			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5):
+			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5) or policy_regime_change <= firstnonzero:
 				bias = False
 				policy_regime = False
 				policy_regime_change = -2*death_time
