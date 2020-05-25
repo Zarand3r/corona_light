@@ -432,7 +432,7 @@ def multi_submission(end, death_metric="deaths"):
     us = loader.load_data("/models/gaussian/us_training_data.csv")
     policies = loader.load_data("/data/us/other/policies.csv")
     fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-    fips_list = fips_key["FIPS"][0:10]
+    fips_list = fips_key["FIPS"]
     data = []
     for index, county in enumerate(fips_list):
         input_dict = {}
