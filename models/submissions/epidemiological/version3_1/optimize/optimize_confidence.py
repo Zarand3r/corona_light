@@ -156,6 +156,82 @@ def evaluator(submission, start_date):
 
 	return county_losses
 
+# hashtable with month and number of days in the month
+maxMonth = {1:31, 2:29, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 12:31}
+
+# gets next day, needed because the current day could be the last of the month
+def next_day(current_day):
+	# assumes that everything is in 2020
+	if current_day.day < maxMonth[current_day.month]:
+		return datetime.datetime(2020, current_day.month, current_day.day + 1)
+	else:
+		return datetime.datetime(2020, current_day.month + 1, 1)
+
+def previous_day(current_day):
+	# assumes that everything is in 2020
+	if current_day.day >= 1:
+		return datetime.datetime(2020, current_day.month, current_day.day-1)
+	else:
+		previous_month = current_day.month - 1
+		return datetime.datetime(2020, previous_month, maxMonth[previous_month])
+
+# we want formatting in the form 2020-04-01, with 0s before months, days < 10
+def formatter(numb):
+	if numb < 10:
+		return "0" + str(numb)
+	else:
+		return str(numb)
+
+def format_submission(dates, death_errors, fips, start, transpose=False):
+	dates = dates.tolist()
+	
+	if transpose:
+		# swap columns and rows for death_errors
+		death_errors = np.array(death_errors)
+		death_errors = death_errors.T
+		death_errors = death_errors.tolist()
+
+	death_errors = death_errors.tolist()
+	
+	# trim both lists so they begin with date represented by start
+	# assumes the lists begin originally at the same place
+	start_index = -1
+	for i in range(0, len(dates)):
+		current_day = dates[i]
+		if current_day.month == start.month and current_day.day == start.day:
+			start_index = i
+			break
+
+	if start_index == -1: # start doesn't exist in dates
+		initial_date = dates[0]
+		difference = initial_date.day - start.day
+		for i in range(difference):
+			dates.insert(0, previous_day(initial_date))
+			initial_date = dates[0]
+			death_errors = [[0,0,0,0,0,0,0,0,0]]+death_errors
+		start_index = 0
+
+	# adding to dates so lengths match up
+	final_date = dates[-1]
+	while len(dates) < len(death_errors):
+		dates.append(next_day(final_date))
+		final_date = dates[-1]
+	
+		
+	death_errors = death_errors[start_index:]
+	dates = dates[start_index:]
+	# convert dates from datetime to string, add fips code
+	for i in range(len(dates)):
+		day = dates[i]
+		day_format = '{year}-{month}-{day}-{fips}'.format(year = day.year,
+														  month = formatter(day.month), 
+														  day = formatter(day.day), 
+														  fips = fips)
+		dates[i] = day_format
+		if i < len(death_errors):
+			death_errors[i].insert(0, dates[i])
+		
+	return death_errors
 
 def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=False, fix_nonconvergent=False, sub_id="0"):
 	start = datetime.datetime(2020, 4, 1)
@@ -174,7 +250,7 @@ def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=F
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
-	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/new_submissions/predictions{sub_id}.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/confidences/predictions{sub_id}.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
@@ -187,8 +263,8 @@ if __name__ == '__main__':
 	# do the code for combine_preidctions first
 	# then do the code comparing different weight parameters 
 	# Make this into a batch script to automate both 
-	start_date = '2020-05-07'
-	latest_date = '2020-05-19'
+	start_date = '2020-05-09'
+	latest_date = '2020-05-23'
 	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
@@ -202,10 +278,10 @@ if __name__ == '__main__':
 	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
 	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
 	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
-	submissions_args = {0: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
-	2: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
-	4: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 5: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
-	6: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 7: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
+	submissions_args = {0: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
+	2: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
+	4: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 5: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
+	6: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 7: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
 	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
 	
@@ -237,24 +313,22 @@ if __name__ == '__main__':
 			if score[county] < best:
 				best = score[county]
 				best_index = index
-			if best_index == 3:
-				print(county)
 		best_parameters = submission_parameters[best_index]
 		if county in list(best_parameters.keys()):
 			county_args = submissions_args[best_index] 
-			county_args["params"] = best_parameters[county]
+			county_args["params"] = best_parameters[county][-1]
 		else:
 			county_args = None
 		combined_args[county] = county_args
 
-
-	# Now we have the best args for each county
+	# # Now we have the best args for each county
 
 	# generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
 	generate_confidence(combined_args, quick=True, error_start=-14, tail=False, fix_nonconvergent=True, sub_id="1")
 	generate_confidence(combined_args, quick=True, error_start=-14, tail=True, fix_nonconvergent=False, sub_id="2")
 
-	new_submissions = ['../epidemiological/version3_1/confidences/submission1.csv', '../epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
+
+	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
 
 	scores = []
 	for submission in new_submissions:

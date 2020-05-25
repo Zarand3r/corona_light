@@ -356,12 +356,16 @@ def estimate_bounds(res, data, fit, tail=False):
 	return (mean,deviation)
 
 def quickie(fit, data, guess_bounds, error_start=-1):
+	if error_start is None:
+		error_start = -1*len(data)+1
 	offset = len(data)+error_start
-	bound_mean, bound_deviation = guess_bounds
 	# bound = []
 	change_bound = []
 	predictions = fit[:,7][(offset-1):]
-	scaler = np.random.normal(loc=bound_mean, scale=bound_deviation)
+	scaler = 1
+	if guess_bounds is not None:
+		bound_mean, bound_deviation = guess_bounds
+		scaler = np.random.normal(loc=bound_mean, scale=bound_deviation)
 	# previous = predictions[0]
 	for index, point in enumerate(predictions):
 		if index > 0:
@@ -675,14 +679,16 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 		if convergent_status == False:
 			return (None,None,None)
 
-		death_pdf = [[point[1] for point in predictions]]
+		death_pdf = None
 		if plot:
 			plot_model(res, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True, death_metric=death_metric)
 			death_pdf = plot_with_errors_sample(res, guesses[:17], data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 		else:
 			if getbounds:
 				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
-
+			else:
+				prediction_fit = [[point[1] for point in predictions]]
+				death_pdf = quickie(prediction_fit, data, None, error_start=None)
 	return (predictions, death_pdf, res)
 
 ########################################################## 
@@ -717,10 +723,6 @@ def model2(params, data, extrapolate=-1, offset=0):
 
 # returns uncertainty of the fit for all variables
 def get_fit_errors2(res, p0_params, original, data, extrapolate=14, error_start=-1, quick=False, tail=False, death_metric="deaths"):
-	population = list(data["Population"])[-1]
-	errors = get_param_errors(res, population)
-	errors[len(p0_params):] = 0
-
 	if error_start is None:
 		error_start = -1*len(data)+1
 
@@ -749,6 +751,15 @@ def get_fit_errors2(res, p0_params, original, data, extrapolate=14, error_start=
 				death_series = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_series))
 				uncertainty.append(death_series)
 		else:
+			population = list(data["Population"])[-1]
+			initial = 0
+			if tail:
+				initial = tail
+			initial_residuals = np.zeros(initial)
+			residuals = (data[death_metric].values)[initial:] - fit[initial:len(data),7]
+			residuals = np.concatenate((initial_residuals,residuals))
+			errors = get_param_errors(res, residuals)
+			errors[len(p0_params):] = 0
 			for i in range(samples):
 				sample = np.random.normal(loc=res.x, scale=errors)
 				death_series = model_beyond(fit, sample, data, guess_bounds, extrapolate, error_start=error_start)
@@ -966,14 +977,17 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 		convergent_status = test_convergence(len(data), data['Population'].values[0], predictions) 
 		if convergent_status == False:
 			return (None,None,None)
-		death_pdf = [[point[1] for point in predictions]]
 
+		death_pdf = None
 		if plot:
 			plot_model2(res, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True, death_metric=death_metric)
 			death_pdf = plot_with_errors_sample2(res, res_original, guesses[:17], original, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 		else:
 			if getbounds:
 				death_pdf = get_fit_errors2(res, guesses[:17], original, data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
+			else:
+				prediction_fit = [[point[1] for point in predictions]]
+				death_pdf = quickie(prediction_fit, data, None, error_start=None)
 
 	return (predictions, death_pdf, res)
 
@@ -1361,6 +1375,7 @@ class Empty:
 def generate_single_confidence(input_dict):
 	us = input_dict["us"]
 	us_daily = input_dict["us_daily"]
+	policies = input_dict["policies"]
 	county = input_dict["county"]
 	end = input_dict["end"]
 	bias = input_dict["bias"]
@@ -1427,7 +1442,7 @@ def generate_single_confidence(input_dict):
 		else:
 			policy_date = int(policy_date.values[0])
 			policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
-			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5):
+			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5) or policy_regime_change <= firstnonzero:
 				bias = False
 				policy_regime = False
 				policy_regime_change = -2*death_time
@@ -1438,9 +1453,9 @@ def generate_single_confidence(input_dict):
 		dates2 = dates[policy_regime_change:]
 		county_data2.reset_index(drop=True, inplace=True)
 		extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-		death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
+		death_pdf = get_fit_errors2(res, params, county_data1, county_data2, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
 	else:
-		death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
+		death_pdf = get_fit_errors(res, params, county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
 	death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 	death_cdf = np.transpose(death_cdf)
 
@@ -1481,12 +1496,14 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 		# input_dict["tail_regime"] = combined_parameters["tail_regime"]
 		# input_dict["adaptive"] = combined_parameters["adaptive"]
 		# input_dict["death_metric"] = combined_parameters["death_metric"]
-		if county in list(combined_parameters.keys()): #combined_parameters has an entry for every county from the optimize script submission files. If the file they came from not have parameters for county, feed in None
-			if combined_parameters[county] is None:
-				nonconvergent.append(county)
+		county_key = str(county)
+		if county_key in list(combined_parameters.keys()): #combined_parameters has an entry for every county from the optimize script submission files. If the file they came from not have parameters for county, feed in None
+			if combined_parameters[county_key] is None:
 				continue
-			for key in list(combined_parameters[county].keys()):
-				input_dict[key] = (combined_parameters[county])[key]
+			for key in list(combined_parameters[county_key].keys()):
+				input_dict[key] = (combined_parameters[county_key])[key]
+		else:
+			continue
 		data.append(input_dict)
 
 	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
@@ -1503,7 +1520,6 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 				counties_fips.append(county)
 
 	if len(nonconvergent) > 0:
-		print(f"nonconvergent: {nonconvergent}")
 		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, fix_nonconvergent=fix_nonconvergent) 
 		counties_dates = counties_dates + counties_dates_non
 		for death_cdf in counties_death_errors_non:
