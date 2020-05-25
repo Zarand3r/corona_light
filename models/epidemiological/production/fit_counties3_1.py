@@ -361,11 +361,12 @@ def quickie(fit, data, guess_bounds, error_start=-1):
 	offset = len(data)+error_start
 	# bound = []
 	change_bound = []
-	predictions = fit[:,7][(offset-1):]
+	predictions = fit
 	scaler = 1
 	if guess_bounds is not None:
 		bound_mean, bound_deviation = guess_bounds
 		scaler = np.random.normal(loc=bound_mean, scale=bound_deviation)
+		predictions = fit[:,7][(offset-1):]
 	# previous = predictions[0]
 	for index, point in enumerate(predictions):
 		if index > 0:
