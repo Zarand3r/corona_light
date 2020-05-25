@@ -988,6 +988,8 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 			else:
 				prediction_fit = [[point[1] for point in predictions]]
 				death_pdf = quickie(prediction_fit, data, None, error_start=None)
+				death_pdf = np.concatenate((data["daily_deaths"].values[0:1], death_pdf))
+				death_pdf = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_pdf))
 
 	return (predictions, death_pdf, res)
 
