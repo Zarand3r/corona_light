@@ -1212,7 +1212,7 @@ def fit_single_county(input_dict):
 			N = county_data['Population'].values[0]
 			first_conditions = first_conditions/N
 			parameter_guess = list(first_parameters)+list(first_conditions)
-			parameters[county] = [parameter_guess]
+			parameters.append(parameter_guess)
 
 			county_data2 = county_data[policy_regime_change:]
 			dates2 = dates[policy_regime_change:]
@@ -1221,7 +1221,7 @@ def fit_single_county(input_dict):
 			for i in range(death_time):
 				county_data2.at[i, death_metric] *= -1
 			extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-			predictions2, death_pdf2, res2  = fit2(county_data1, res, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+			predictions2, death_pdf2, res2  = fit2(county_data1, res, county_data2, weight=weight, plot=False, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
 			if res2 is not None:
 				predictions, death_pdf, res = predictions2, death_pdf2, res2
 

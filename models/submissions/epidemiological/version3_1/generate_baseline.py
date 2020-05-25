@@ -106,12 +106,11 @@ if __name__ == '__main__':
 	counties_death_errors = output_dict["counties_death_errors"]
 	counties_fips = output_dict["counties_fips"]
 	nonconvergent = output_dict["nonconvergent"]
-	parameters= output_dict["parameters"]
 	for i in range(len(counties_fips)):
 		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
-	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/fit/predictions_baseline.csv'
+	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/fits/predictions_baseline.csv'
 	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
 	with open(output_file, 'w') as submission_file:
 		writer = csv.writer(submission_file, delimiter=',')
