@@ -3,8 +3,10 @@ import numpy as np
 import sys
 import traceback
 from tqdm.auto import tqdm
+import datetime
 import os
 import csv
+import json
 import git
 import sys
 repo = git.Repo("./", search_parent_directories=True)
@@ -202,8 +204,8 @@ if __name__ == '__main__':
 	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
 	submissions_args = {0: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
 	2: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
-	3: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 4: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
-	5: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 5: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
+	4: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 5: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
+	6: {"guesses":guesses1, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 7: {"guesses":guesses2, "bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
 	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
 	
@@ -238,7 +240,7 @@ if __name__ == '__main__':
 			if best_index == 3:
 				print(county)
 		best_parameters = submission_parameters[best_index]
-		if county in list(submission_parameters.keys()):
+		if county in list(best_parameters.keys()):
 			county_args = submissions_args[best_index] 
 			county_args["params"] = best_parameters[county]
 		else:

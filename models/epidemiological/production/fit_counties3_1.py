@@ -1490,7 +1490,7 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 		data.append(input_dict)
 
 	pool = Pool(os.cpu_count()) ## According to TA this will saturate more cores in the hpc?
-	results = pool.map(fit_single_county, data)
+	results = pool.map(generate_single_confidence, data)
 	
 	for result in results:
 		if result is not None:
