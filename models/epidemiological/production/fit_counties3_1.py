@@ -680,7 +680,7 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 		if convergent_status == False:
 			return (None,None,None)
 
-		death_pdf = None
+		death_pdf = []
 		if plot:
 			plot_model(res, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True, death_metric=death_metric)
 			death_pdf = plot_with_errors_sample(res, guesses[:17], data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
@@ -689,7 +689,8 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 			else:
 				prediction_fit = [[point[1] for point in predictions]]
-				death_pdf = quickie(prediction_fit, data, None, error_start=None)
+				death_error = quickie(prediction_fit, data, None, error_start=None)
+				death_pdf.append(death_error)
 	return (predictions, death_pdf, res)
 
 ########################################################## 
@@ -979,7 +980,7 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 		if convergent_status == False:
 			return (None,None,None)
 
-		death_pdf = None
+		death_pdf = []
 		if plot:
 			plot_model2(res, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=True, death_metric=death_metric)
 			death_pdf = plot_with_errors_sample2(res, res_original, guesses[:17], original, data, extrapolate=extrapolate, boundary=boundary, plot_infectious=False, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
@@ -988,9 +989,10 @@ def fit2(original, res_original, data, weight=False, plot=False, extrapolate=14,
 				death_pdf = get_fit_errors2(res, guesses[:17], original, data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 			else:
 				prediction_fit = [[point[1] for point in predictions]]
-				death_pdf = quickie(prediction_fit, data, None, error_start=None)
-				death_pdf = np.concatenate((data["daily_deaths"].values[0:1], death_pdf))
-				death_pdf = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_pdf))
+				death_error = quickie(prediction_fit, data, None, error_start=None)
+				death_error = np.concatenate((data["daily_deaths"].values[0:1], death_pdf))
+				death_error = np.concatenate((original["daily_deaths"].values[0:len(original)-death_time], death_pdf))
+				death_pdf.append(death_error)
 
 	return (predictions, death_pdf, res)
 
