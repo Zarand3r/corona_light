@@ -124,8 +124,8 @@ if __name__ == '__main__':
 	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
 	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
 	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
-	submission(start, end, guesses=guesses1, bias=True, weight=10, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=False, sub_id="1_1")
-	submission(start, end, guesses=guesses2, bias=True, weight=10, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=False, sub_id="1_2")
+	submission(start, end, guesses=guesses1, bias=True, weight=True, policy_regime=False, tail_regime=False, death_metric="deaths", adaptive=False, sub_id="1_1")
+	submission(start, end, guesses=guesses2, bias=True, weight=True, policy_regime=False, tail_regime=False, death_metric="deaths", adaptive=False, sub_id="1_2")
 
 
 
