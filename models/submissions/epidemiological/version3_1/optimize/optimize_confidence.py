@@ -187,7 +187,10 @@ if __name__ == '__main__':
 	# Make this into a batch script to automate both 
 	start_date = '2020-05-07'
 	latest_date = '2020-05-19'
-	submissions = ['../epidemiological/version3_1/old_submissions/submission3_1_0.csv', '../epidemiological/version3_1/old_submissions/submission3_1_1.csv', '../epidemiological/version3_1/old_submissions/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
+	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission1_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission2_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission3_2.csv',\
+	f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fit/submission4_2.csv']
 	submissions_args = {0: {bias=False, weight=False, regime_tail=True, regime_policy=False}, 1: {bias=True, adaptive=False, fix_nonconvergent=False}, 2: {bias=True, adaptive=True, fix_nonconvergent=False}, 3: None}
 	parameter_files = []
 	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']

@@ -992,7 +992,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [42101] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [6037] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1087,7 +1087,6 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
 			predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
 
-		print(death_pdf)
 		if res is None:
 			# add to nonconvergent counties
 			nonconvergent.append(county)
@@ -1328,10 +1327,10 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 
 if __name__ == '__main__':
 	end = datetime.datetime(2020, 6, 30)
-	# guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
-	# 9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
-	# 4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
-	# 3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
 
 	# guesses = [3.26346655e-01, 6.57656170e-02, 1.72833477e-01, 4.51698345e-01, 4.03987536e-01, 4.15975019e-02,	\
 	# 2.22208127e-02, 3.37385446e-02, 5.29119649e-01, 4.54705614e-04, 8.19568301e-03, 1.74608476e-01,	\
