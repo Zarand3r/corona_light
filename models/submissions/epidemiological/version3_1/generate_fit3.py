@@ -92,7 +92,7 @@ def format_submission(dates, death_errors, fips, start, transpose=False):
 		
 	return death_errors
 
-def submission(start, end, guesses=None, bias=False, weight=False, policy_regime=False, tail_regime=False, death_metric="deaths", adaptive=False, sub_id="0"):
+def generate_submission(start, end, guesses=None, bias=False, weight=False, policy_regime=False, tail_regime=False, death_metric="deaths", adaptive=False, sub_id="0"):
 	submission = []
 	output_dict = fit_counties3_1.multi_submission(end, guesses=guesses, bias=bias, weight=weight, policy_regime=policy_regime, tail_regime=tail_regime, death_metric=death_metric, adaptive=adaptive, getbounds=False) 
 	counties_dates = output_dict["counties_dates"]
@@ -114,7 +114,6 @@ def submission(start, end, guesses=None, bias=False, weight=False, policy_regime
 if __name__ == '__main__':
 	start = datetime.datetime(2020, 4, 1)
 	end = datetime.datetime(2020, 6, 30)
-	submission = []
 	guesses1 = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
 	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
@@ -124,8 +123,8 @@ if __name__ == '__main__':
 	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
 	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
 	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
-	submission(start, end, guesses=guesses1, bias=True, weight=True, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=True, sub_id="3_1")
-	submission(start, end, guesses=guesses2, bias=True, weight=True, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=True, sub_id="3_2")
+	generate_submission(start, end, guesses=guesses1, bias=True, weight=True, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=True, sub_id="3_1")
+	generate_submission(start, end, guesses=guesses2, bias=True, weight=True, policy_regime=False, tail_regime=True, death_metric="deaths", adaptive=True, sub_id="3_2")
 
 
 
