@@ -1293,7 +1293,7 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 	policies = loader.load_data("/data/us/other/policies.csv")
 	policies = policies.dropna(subset=['stay at home'])
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-	fips_list = fips_key["FIPS"][100:120]
+	fips_list = fips_key["FIPS"]
 
 	data = []
 	for county in fips_list:
