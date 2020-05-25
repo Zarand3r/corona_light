@@ -304,6 +304,22 @@ def get_params(end, county, county_data, noise, extrapolate, death_metric="death
         return None
     counties_params = solution
     return counties_params
+
+def estimate_deviation(deaths, predictions, initial=-14):
+    deaths_list = deaths[initial:]
+    predictions_list = predictions[initial:]
+    residuals = []
+    for index, prediction in enumerate(predictions_list):
+        death = deaths_list[index]
+        if prediction > 0 and death > 0:
+            residuals.append(death/prediction)
+    deviation = 0
+    if len(residuals) > 0:
+        deviation = np.std(residuals)
+        if deviation > 0.4:
+            deviation = 0.4
+    return deviation
+
         
 def test(end, death_metric="deaths"):
     counties_dates = []
@@ -389,10 +405,17 @@ def fit_single_county(input_dict):
 
     death_cdf = []
     p_values = [-1.28155, -0.84162, -0.52440, -0.25335, 0, 0.25335, 0.52440, 0.84162, 1.28155]
+    # for index, percentile in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90]):
+    #     uncertainty = p_values[index] * std_error
+    #     deaths = county_data["deaths"].values
+    #     bound = (predictions[len(county_data):]) + uncertainty[len(county_data):]
+    #     bound = list(np.concatenate((deaths, bound)))
+    #     death_cdf.append(bound)
     for index, percentile in enumerate([10, 20, 30, 40, 50, 60, 70, 80, 90]):
-        uncertainty = p_values[index] * std_error
         deaths = county_data["deaths"].values
-        bound = (predictions[len(county_data):]) + uncertainty[len(county_data):]
+        deviation = estimate_deviation(deaths, predictions[:len(deaths)])
+        uncertainty = 1+(deviation*p_values[index])
+        bound = uncertainty*np.array(predictions[len(county_data):])
         bound = list(np.concatenate((deaths, bound)))
         death_cdf.append(bound)
     death_cdf = np.transpose(death_cdf)
@@ -409,7 +432,7 @@ def multi_submission(end, death_metric="deaths"):
     us = loader.load_data("/models/gaussian/us_training_data.csv")
     policies = loader.load_data("/data/us/other/policies.csv")
     fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
-    fips_list = fips_key["FIPS"]
+    fips_list = fips_key["FIPS"][0:10]
     data = []
     for index, county in enumerate(fips_list):
         input_dict = {}
