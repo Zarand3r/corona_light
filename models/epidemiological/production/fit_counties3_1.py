@@ -689,7 +689,6 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 				death_pdf = get_fit_errors(res, guesses[:17], data, extrapolate=extrapolate, error_start=error_start, quick=quick, tail=tail, death_metric=death_metric)
 			else:
 				prediction_fit = [point[1] for point in predictions]
-				print(prediction_fit)
 				death_error = quickie(prediction_fit, data, None, error_start=None)
 				death_error = np.concatenate((data["daily_deaths"].values[0:1], death_error))
 				death_pdf.append(death_error)
@@ -1459,7 +1458,6 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 	policies = policies.dropna(subset=['stay at home'])
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
-	fips_list=[36061]
 
 	data = []
 	for county in fips_list:
