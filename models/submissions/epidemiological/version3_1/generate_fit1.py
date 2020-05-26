@@ -67,7 +67,7 @@ def format_submission(dates, death_errors, fips, start, transpose=False):
 		for i in range(difference):
 			dates.insert(0, previous_day(initial_date))
 			initial_date = dates[0]
-			death_errors = [[0,0,0,0,0,0,0,0,0]]+death_errors
+			death_errors = [[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0]]+death_errors
 		start_index = 0
 
 	# adding to dates so lengths match up
