@@ -260,8 +260,8 @@ if __name__ == '__main__':
 	# do the code for combine_preidctions first
 	# then do the code comparing different weight parameters 
 	# Make this into a batch script to automate both 
-	start_date = '2020-05-09'
-	latest_date = '2020-05-22'
+	start_date = '2020-05-11'
+	latest_date = '2020-05-24'
 	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
@@ -318,7 +318,6 @@ if __name__ == '__main__':
 		else:
 			county_args = None
 		combined_args[county] = county_args
-	print(combined_args)
 
 	# # Now we have the best args for each county
 
@@ -386,7 +385,7 @@ if __name__ == '__main__':
 	combined.to_csv(output_file, index=False)
 
 
-	score_date = '2020-05-23'
+	score_date = '2020-05-24'
 	evaluator("optimize_confidence.csv", score_date)
 
 
