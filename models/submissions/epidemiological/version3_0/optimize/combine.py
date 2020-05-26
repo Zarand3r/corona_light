@@ -155,8 +155,8 @@ if __name__ == '__main__':
 	start_date = '2020-05-11'
 	latest_date = '2020-05-24'
 	# old_submissions = ['../old_submissions/submission3_0_0.csv', '../old_submissions/submission3_0_1.csv', '../old_submissions/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
-	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', 'outsider.csv', f'{homedir}/sample_submission.csv']
-	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', 'outsider.csv', f'{homedir}/sample_submission.csv']
+	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
+	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
 	scores = []
 	
 	for submission in old_submissions:
@@ -173,8 +173,7 @@ if __name__ == '__main__':
 			if score[county] < best:
 				best = score[county]
 				best_index = index
-		if best_index == 4:
-			print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
+		print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
 		optimal_submission[county] = best_index
 
 	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_baseline.csv'
