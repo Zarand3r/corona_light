@@ -691,6 +691,7 @@ def fit(data, bias=None, bias_value=0.4, weight=False, plot=False, extrapolate=1
 				prediction_fit = [point[1] for point in predictions]
 				print(prediction_fit)
 				death_error = quickie(prediction_fit, data, None, error_start=None)
+				death_error = np.concatenate((data["daily_deaths"].values[0:1], death_error))
 				death_pdf.append(death_error)
 	return (predictions, death_pdf, res)
 
@@ -1345,33 +1346,6 @@ def multi_submission(end, bias=False, policy_regime=False, tail_regime=False, we
 	return output_dict
 
 
-if __name__ == '__main__':
-	end = datetime.datetime(2020, 6, 30)
-	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
-	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
-	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
-	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-
-	# guesses = [3.26346655e-01, 6.57656170e-02, 1.72833477e-01, 4.51698345e-01, 4.03987536e-01, 4.15975019e-02,	\
-	# 2.22208127e-02, 3.37385446e-02, 5.29119649e-01, 4.54705614e-04, 8.19568301e-03, 1.74608476e-01,	\
-	# 6.44116005e-03, 1.52073678e-01, 1.27747706e-01, 5.91517897e-08, 1.15107165e-03, 8.54823141e-01,	\
-	# 1.01171698e-01, 3.52743362e-10, 2.11225346e-02, 1.34426338e-18, 4.25844474e-05, 7.02140155e-06]
-
-	guesses = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
-	0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
-	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
-	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
-	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
-
-	# guesses = None
-
-	test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
-
-
-
 
 
 
@@ -1485,6 +1459,7 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 	policies = policies.dropna(subset=['stay at home'])
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	fips_list = fips_key["FIPS"]
+	fips_list=[36061]
 
 	data = []
 	for county in fips_list:
@@ -1535,3 +1510,36 @@ def multi_generate_confidence(combined_parameters, end, quick=True, error_start=
 	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
 	"nonconvergent": nonconvergent}
 	return output_dict
+
+
+if __name__ == '__main__':
+	end = datetime.datetime(2020, 6, 30)
+	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+
+	# guesses = [3.26346655e-01, 6.57656170e-02, 1.72833477e-01, 4.51698345e-01, 4.03987536e-01, 4.15975019e-02,	\
+	# 2.22208127e-02, 3.37385446e-02, 5.29119649e-01, 4.54705614e-04, 8.19568301e-03, 1.74608476e-01,	\
+	# 6.44116005e-03, 1.52073678e-01, 1.27747706e-01, 5.91517897e-08, 1.15107165e-03, 8.54823141e-01,	\
+	# 1.01171698e-01, 3.52743362e-10, 2.11225346e-02, 1.34426338e-18, 4.25844474e-05, 7.02140155e-06]
+
+	guesses = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
+	0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
+	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
+	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
+	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
+
+	# guesses = None
+
+	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+
+	combined_parameters = {"36061":{"params": [0.18464002718814868, 0.20076439616799902, 0.27831377617534087, 0.3761033143737377, 0.6086656716899356, 0.05182947380621058, 0.0050691889901191885, 0.05383311407143483, 0.500258800207976, 0.045291085997305386, 0.006427981954879973, 0.04483256685248878, 0.03715251227795013, 0.025713088160974104, 0.236318963118657, 0.0006709729473071447, 0.0010150337279420036, 0.7887113128316825, 0.32770001577488694, 9.251361678037966e-06, 6.172349342727129e-10, 0.0001473549174590101, 0.003554328779807902, 1.579900906246461e-05],\
+	"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}}
+
+	output = multi_generate_confidence(combined_parameters, end, quick=True, error_start=-14, tail=False, fix_nonconvergent=True)
+	print(list(output["counties_death_errors"]))
+

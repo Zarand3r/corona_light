@@ -3,7 +3,7 @@ import numpy as np
 import sys
 import traceback
 from tqdm.auto import tqdm
-import datetime
+import datetime as dt
 import os
 import csv
 import json
@@ -163,17 +163,17 @@ maxMonth = {1:31, 2:29, 3:31, 4:30, 5:31, 6:30, 7:31, 8:31, 9:30, 10:31, 11:30, 
 def next_day(current_day):
 	# assumes that everything is in 2020
 	if current_day.day < maxMonth[current_day.month]:
-		return datetime.datetime(2020, current_day.month, current_day.day + 1)
+		return dt.datetime(2020, current_day.month, current_day.day + 1)
 	else:
-		return datetime.datetime(2020, current_day.month + 1, 1)
+		return dt.datetime(2020, current_day.month + 1, 1)
 
 def previous_day(current_day):
 	# assumes that everything is in 2020
 	if current_day.day >= 1:
-		return datetime.datetime(2020, current_day.month, current_day.day-1)
+		return dt.datetime(2020, current_day.month, current_day.day-1)
 	else:
 		previous_month = current_day.month - 1
-		return datetime.datetime(2020, previous_month, maxMonth[previous_month])
+		return dt.datetime(2020, previous_month, maxMonth[previous_month])
 
 # we want formatting in the form 2020-04-01, with 0s before months, days < 10
 def formatter(numb):
@@ -183,6 +183,7 @@ def formatter(numb):
 		return str(numb)
 
 def format_submission(dates, death_errors, fips, start, transpose=False):
+	print(start.month)
 	dates = dates.tolist()
 	
 	if transpose:
@@ -234,8 +235,8 @@ def format_submission(dates, death_errors, fips, start, transpose=False):
 	return death_errors
 
 def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=False, fix_nonconvergent=False, sub_id="0"):
-	start = datetime.datetime(2020, 4, 1)
-	end = datetime.datetime(2020, 6, 30)
+	start = dt.datetime(2020, 4, 1)
+	end = dt.datetime(2020, 6, 30)
 	submission = []
 	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
 	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
@@ -247,7 +248,7 @@ def generate_confidence(combined_parameters, quick=True, error_start=-14, tail=F
 	counties_fips = output_dict["counties_fips"]
 	nonconvergent = output_dict["nonconvergent"]
 	for i in range(len(counties_fips)):
-		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
+		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start=start)
 		submission = submission + county_prediction
 	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
 	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/confidences/predictions{sub_id}.csv'
@@ -325,7 +326,7 @@ if __name__ == '__main__':
 
 	# generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
 	generate_confidence(combined_args, quick=True, error_start=-14, tail=False, fix_nonconvergent=True, sub_id="1")
-	generate_confidence(combined_args, quick=True, error_start=-14, tail=True, fix_nonconvergent=False, sub_id="2")
+	generate_confidence(combined_args, quick=True, error_start=-14, tail=-14, fix_nonconvergent=False, sub_id="2")
 
 
 	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
