@@ -4,7 +4,7 @@ import sys
 import traceback
 from tqdm.auto import tqdm
 
-csv_to_score = '../sample_submission.csv'
+csv_to_score = '../models/submissions/final/final_test.csv'
 
 def get_date(x):
     return '-'.join(x.split('-')[:3])
@@ -32,7 +32,7 @@ def evaluate(test_df, user_df):
         total_loss += pinball_loss(join_df['deaths'].values, join_df[column].values, quantile) / 9.0
     return total_loss
 
-start_date = '2020-04-24' # First date to include in scoring
+start_date = '2020-05-26' # First date to include in scoring
 
 daily_df = pd.read_csv('../data/us/covid/nyt_us_counties_daily.csv')
 daily_df['fips'] = daily_df['fips'].astype(int)

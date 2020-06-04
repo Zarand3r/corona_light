@@ -274,8 +274,8 @@ if __name__ == '__main__':
 	# do the code for combine_preidctions first
 	# then do the code comparing different weight parameters 
 	# Make this into a batch script to automate both 
-	start_date = '2020-05-11'
-	latest_date = '2020-05-24'
+	start_date = '2020-05-12'
+	latest_date = '2020-05-25'
 	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
 	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
