@@ -141,11 +141,69 @@ def linear_regression(data, X, Y, cutoff=None, window=3, moving=False, plot=True
 	if plot:
 		fig = plt.figure(figsize = (8,8))
 		ax = fig.add_subplot(1,1,1) 
-		ax.set_xlabel('First', fontsize = 15)
-		ax.set_ylabel('Second', fontsize = 15)
+		ax.set_xlabel(X, fontsize = 15)
+		ax.set_ylabel(Y, fontsize = 15)
 		ax.set_title('Beds', fontsize = 20)
 		ax.scatter(x_feature, y_feature, s = 10, label=Y)
 		ax.scatter(x_feature, predictions, s = 10, label="Predicted")
+		ax.grid()
+		ax.legend()
+		if savefig:
+			plt.savefig("figures/fit_moving_"+name)
+		plt.show()
+
+def linear_regression2(data, X, Y, cutoff=None, window=3, moving=False, plot=True, savefig=True):
+	data.dropna(subset=[X,Y], inplace=True)
+	data2 = data[data[X] < 250]
+	name = X + "_" + Y
+	x_feature = data[X].values
+	y_feature = data[Y].values
+	x_feature2 = data2[X].values
+	y_feature2 = data2[Y].values
+	print(y_feature)
+	death_time = find_peak(x_feature, window=window) - find_peak(y_feature, window=window)
+	print(death_time)
+	if death_time > 0:
+			x_feature = x_feature[death_time:]
+			y_feature = y_feature[:-1*death_time]
+			x_feature2 = x_feature2[death_time:]
+			y_feature2 = y_feature2[:-1*death_time]
+	elif death_time < 0:
+		x_feature = x_feature[:death_time]
+		y_feature = y_feature[-1*death_time:]
+		x_feature2 = x_feature2[:death_time]
+		y_feature2 = y_feature2[-1*death_time:]
+
+	if moving and type(moving) == int:
+		if moving > 0:
+			x_feature = np.array(moving_average(x_feature, window=moving))
+			y_feature = np.array(moving_average(y_feature, window=moving))
+			x_feature2 = np.array(moving_average(x_feature2, window=moving))
+			y_feature2 = np.array(moving_average(y_feature2, window=moving))
+
+	if cutoff is not None:
+		x_feature = x_feature[:cutoff]
+		y_feature = y_feature[:cutoff]
+		x_feature2 = x_feature2[:cutoff]
+		y_feature2 = y_feature2[:cutoff]
+
+		# x_feature = x_feature[5:]
+		# y_feature = y_feature[5:]
+	x_feature = x_feature.reshape(-1, 1)
+	x_feature2 = x_feature2.reshape(-1, 1)
+
+	lm = linear_model.LinearRegression()
+	model = lm.fit(x_feature2,y_feature2)
+	predictions = lm.predict(x_feature2)
+
+	if plot:
+		fig = plt.figure(figsize = (8,8))
+		ax = fig.add_subplot(1,1,1) 
+		ax.set_xlabel(X, fontsize = 15)
+		ax.set_ylabel(Y, fontsize = 15)
+		ax.set_title('Beds', fontsize = 20)
+		ax.scatter(x_feature, y_feature, s = 10, label=Y)
+		ax.scatter(x_feature2, predictions, s = 10, label="Predicted")
 		ax.grid()
 		ax.legend()
 		if savefig:
@@ -163,8 +221,12 @@ if __name__ == '__main__':
 	# visualize(state, "date_processed", ["deathIncrease", "hospitalizedCurrently"], moving=7)
 	# visualize_peaks(state, "deathIncrease", ["hospitalizedCurrently"], window=7)
 	# visualize(state, "date_processed", ["deathIncrease", "hospitalizedIncrease"], moving=7)
+	# visualize(state, "date_processed", ["deathIncrease", "inIcuCurrently"], moving=7)
+	# visualize(state, "date_processed", ["deathIncrease", "onVentilatorCurrently"], moving=7)
 	# visualize_peaks(state, "deathIncrease", ["hospitalizedIncrease"], window=7)
 	# visualize_peaks(state, "deathIncrease", ["onVentilatorCurrently"], window=7)
 	# linear_regression(state, "deathIncrease", "hospitalizedCurrently", window=7, moving=3)
-	linear_regression(state, "deathIncrease", "onVentilatorCurrently", cutoff=-10, window=7, moving=7)
+	# linear_regression(state, "deathIncrease", "hospitalizedIncrease", window=7, moving=3)
+	# linear_regression2(state, "deathIncrease", "onVentilatorCurrently", window=7, moving=7)
+	linear_regression2(state, "deathIncrease", "inIcuCurrently", window=7, moving=7)
 

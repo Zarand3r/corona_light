@@ -1012,7 +1012,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 	policies = loader.load_data("/data/us/other/policies.csv")
 	fips_key = loader.load_data("/data/us/processing_data/fips_key.csv", encoding="latin-1")
 	# fips_list = fips_key["FIPS"]
-	fips_list = [6037] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
+	fips_list = [27053] #34017, 17031, 25013, 34023, 36059, 33011      56013,1017, 44007, 42101, 6037 27053
 	total = len(fips_list)
 
 	for index, county in enumerate(fips_list):
@@ -1020,7 +1020,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 		county_data = loader.query(us, "fips", county)
 		county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-		county_data = county_data[2:]
+		county_data = county_data[2:-14]
 		
 		firstnonzero = next((i for i,value in enumerate(county_data[death_metric].values) if value != 0), None)
 		final_death = (county_data["deaths"].values)[-1]
@@ -1099,7 +1099,7 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 			county_tail_regime = max(firstnonzero, county_tail_regime)
 			predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
 			if res is not None:
-				predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=False, extrapolate=extrapolate, guesses=res.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+				predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=plot, extrapolate=extrapolate, guesses=res.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
 				if res2 is not None:
 					predictions, death_pdf, res = predictions2, death_pdf2, res2
 
@@ -1522,22 +1522,18 @@ if __name__ == '__main__':
 	# 6.44116005e-03, 1.52073678e-01, 1.27747706e-01, 5.91517897e-08, 1.15107165e-03, 8.54823141e-01,	\
 	# 1.01171698e-01, 3.52743362e-10, 2.11225346e-02, 1.34426338e-18, 4.25844474e-05, 7.02140155e-06]
 
-	guesses = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
-	0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
-	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
-	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
-	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
+	# guesses = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
+	# 0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
+	# 0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
+	# 4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
+	# 0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
 
 	# guesses = None
 
+	test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=True, adaptive=True, death_metric="deaths")
+	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=True, adaptive=True, death_metric="avg_deaths")
 	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=False, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
-	# test(end, bias=True, policy_regime=False, tail_regime=-14, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
-
-	combined_parameters = {"36061":{"params": [0.18464002718814868, 0.20076439616799902, 0.27831377617534087, 0.3761033143737377, 0.6086656716899356, 0.05182947380621058, 0.0050691889901191885, 0.05383311407143483, 0.500258800207976, 0.045291085997305386, 0.006427981954879973, 0.04483256685248878, 0.03715251227795013, 0.025713088160974104, 0.236318963118657, 0.0006709729473071447, 0.0010150337279420036, 0.7887113128316825, 0.32770001577488694, 9.251361678037966e-06, 6.172349342727129e-10, 0.0001473549174590101, 0.003554328779807902, 1.579900906246461e-05],\
-	"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}}
-
-	output = multi_generate_confidence(combined_parameters, end, quick=True, error_start=-14, tail=False, fix_nonconvergent=True)
-	print(list(output["counties_death_errors"]))
+	# test(end, bias=True, policy_regime=False, tail_regime=True, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=False, adaptive=True, death_metric="deaths")
+	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=True, adaptive=True, death_metric="deaths")
+	# test(end, bias=True, policy_regime=False, tail_regime=True, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=True, adaptive=True, death_metric="deaths")
 

@@ -92,6 +92,29 @@ def format_submission(dates, death_errors, fips, start, transpose=False):
 		
 	return death_errors
 
+def generate_submission(start, end, bias=False, weight=False, policy_regime=False, tail_regime=False, death_metric="deaths", adaptive=False, sub_id="0", location=""):
+	guesses = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	submission = []
+	output_dict = fit_counties3_0.multi_submission(end, guesses=guesses, bias=bias, weight=weight, policy_regime=policy_regime, tail_regime=tail_regime, death_metric=death_metric, adaptive=adaptive, fix_nonconvergent=False) 
+	counties_dates = output_dict["counties_dates"]
+	counties_death_errors = output_dict["counties_death_errors"]
+	counties_fips = output_dict["counties_fips"]
+	nonconvergent = output_dict["nonconvergent"]
+	for i in range(len(counties_fips)):
+		county_prediction = format_submission(counties_dates[i], counties_death_errors[i], counties_fips[i], start)
+		submission = submission + county_prediction
+	# header = "{},{},{},{},{},{},{},{},{},{}\n".format("id", "10", "20", "30", "40", "50", "60", "70", "80", "90")
+	output_file = location + f"predictions{sub_id}.csv"
+	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
+	with open(output_file, 'w') as submission_file:
+		writer = csv.writer(submission_file, delimiter=',')
+		writer.writerow(header)
+		writer.writerows(submission)
+	formatter2.reformat(output_file, save=True, fix=False, id=sub_id)
+
 
 if __name__ == '__main__':
 	start = datetime.datetime(2020, 4, 1)
