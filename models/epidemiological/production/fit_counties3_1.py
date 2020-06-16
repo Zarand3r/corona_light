@@ -1170,7 +1170,7 @@ def fit_single_county(input_dict):
 	county_data = loader.query(us, "fips", county)
 	county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 	county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-	county_data = county_data[2:]
+	county_data = county_data[2:-20]
 	if cutoff is not None:
 		county_data = county_data[:cutoff]
 
@@ -1435,9 +1435,7 @@ def generate_single_confidence(input_dict):
 	else:
 		if tail_regime and type(tail_regime)==int:
 			tail = tail_regime
-		plot_model(res, county_data, extrapolate=extrapolate, plot_infectious=True, death_metric=death_metric)
-		death_pdf = plot_with_errors_sample(res, params, county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
-		# death_pdf = get_fit_errors(res, params, county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
+		death_pdf = get_fit_errors(res, params, county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
 	death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 	death_cdf = np.transpose(death_cdf)
 
@@ -1550,42 +1548,6 @@ if __name__ == '__main__':
 	# test(end, bias=True, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=True, adaptive=True, death_metric="deaths")
 	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=True, adaptive=True, death_metric="deaths")
 	# test(end, bias=True, policy_regime=False, tail_regime=True, weight=True, plot=True, guesses=guesses, error_start=-14, quick=True, tail=-14, fitQ=True, adaptive=True, death_metric="deaths")
-
-	params1 = [0.18464002718814868, 0.20076439616799902, 0.27831377617534087, 0.3761033143737377, 0.6086656716899356, 0.05182947380621058, 0.0050691889901191885, 0.05383311407143483, 0.500258800207976, 0.045291085997305386, 0.006427981954879973, 0.04483256685248878, 0.03715251227795013, 0.025713088160974104, 0.236318963118657, 0.0006709729473071447, 0.0010150337279420036, 0.7887113128316825, 0.32770001577488694, 9.251361678037966e-06, 6.172349342727129e-10, 0.0001473549174590101, 0.003554328779807902, 1.579900906246461e-05]
-	params2 = [0.49948044451065493, 0.6252678979630594, 0.3018249620274119, 0.3926810941270059, 0.7341596445778211, 0.2076121103031101, 0.27418556108980696, 0.4058713464426599, 0.3795123397127824, 0.0784445280950062, 0.001018859790540544, 0.008759962428047066, 0.09279884873939155, 0.06711555615041559, 9.961053646449013e-06, 0.0011801780954027806, 2.3710671236304217e-08, 0.8286402010264091, 0.35027582716706923, 8.44062605509923e-06, 5.80151642331906e-10, 0.00013458692127002957, 0.00998727930382648, 1.5214028371651635e-05]
-	params1 = [0.15828574112226076, 0.10922464568325901, 0.2732224996316474, 0.3477075505087224, 0.5885028938485051, 0.04495584878538016, 3.811415634162534e-05, 0.06098553063407003, 0.49833294170607273, 0.0231105434581256, 0.0006568923874188896, 0.037854347701992704, 0.03444943195595012, 0.023053325749551337, 0.23984963752836222, 0.000778147526776212, 1.4052883384369008e-09, 0.789022340237095, 0.32714848028861276, 1.0929017067187714e-05, 6.887184988552397e-10, 0.0001745003896716419, 0.003922193579832964, 1.4891440750902992e-05]
-	params1 = list(0.8*np.array(params1))
-	a_1 = params1[0] #decrease to delay
-	a_2 = params1[1] #decrease to delay
-	a_3 = params1[2] #decrease to delay
-	b_1 = params1[3] #decrease to delay
-	b_2 = params1[4] #decrease to delay
-	b_3 = params1[5]
-	b_4 = params1[6]
-	g_a = params1[7]
-	g_i = params1[8]
-	th = params1[9]
-	del_a = params1[10]
-	del_i = params1[11]
-	r_a = params1[12]
-	r_i = 0.2*params1[13]
-	r_q = params1[14]
-	d_i = params1[15]
-	d_q = params1[16]
-	P0 = 0.7887113128316825
-	E0 = 0.32770001577488694
-	C0 = 9.251361678037966e-06
-	A0 = 6.172349342727129e-10
-	I0 = 0.0001473549174590101
-	Q0 = 0.003554328779807902
-	R0 = 1.579900906246461e-05
-	params = [a_1, a_2, a_3, b_1, b_2, b_3, b_4, g_a, g_i, th, del_a, del_i, r_a, r_i, r_q, d_i, d_q, P0, E0, C0, A0, I0, Q0, R0]
-	combined_parameters = {
-	"36061":{"params": params,\
-	"bias":True, "weight":True, "policy_regime":False, "tail_regime":-14, "death_metric":"deaths", "adaptive":True}}
-
-	output = multi_generate_confidence(combined_parameters, end, quick=True, error_start=None)
-	print(list(output["counties_death_errors"]))
 
 
 
