@@ -1,5 +1,8 @@
 ## `exploratory`
 
-**This directory is in under construction. Notebooks will be added over the next few days and the directory will be reorganized.**
-
-We include several exploratory notebooks of the provided datasets to walk through commonly used features. This also includes the baseline models of the TAs, such as SIR-like models used by the epidemiology community.
+Any kind of preliminary analysis that you do should be done in your own
+folder. If you do not have a folder, please create one using your first name
+and all lowercase. We have no first name overlaps so this will make it
+easy to identify everyone's work. Record any experiments or sandbox
+adjustments you make to models in your folder. Feel free to also peruse
+other researcher's exploratory folders to get ideas :)
