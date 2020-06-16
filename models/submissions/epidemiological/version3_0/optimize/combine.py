@@ -9,8 +9,8 @@ import git
 import sys
 repo = git.Repo("./", search_parent_directories=True)
 homedir = repo.working_dir
-sys.path.insert(1, f"{homedir}" + '/models/data_processing')
-import loader
+# sys.path.insert(1, f"{homedir}" + '/models/data_processing')
+# import loader
 
 def get_date(x):
 	return '-'.join(x.split('-')[:3])
@@ -166,16 +166,22 @@ def evaluator(submission, start_date):
 
 if __name__ == '__main__':
 	# start_date should be 14 days before the latest date, which should be the last day of data
-	start_date = '2020-05-12'
-	latest_date = '2020-05-25'
+	start_date = '2020-05-04'
+	latest_date = '2020-05-17'
+	score_date = '2020-05-18'
 	# old_submissions = ['../old_submissions/submission3_0_0.csv', '../old_submissions/submission3_0_1.csv', '../old_submissions/submission3_0_2.csv', f'{homedir}/sample_submission.csv']
-	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', "outsider.csv", f'{homedir}/sample_submission.csv']
-	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', "outsider.csv", f'{homedir}/sample_submission.csv']
+	old_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
+	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_0.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_1.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_2.csv', f'{homedir}/models/submissions/epidemiological/version3_0/new_submissions/submission3_0_3.csv', f'{homedir}/sample_submission.csv']
 	scores = []
 	
-	for submission in old_submissions:
-		score = evaluator(submission, start_date)
-		scores.append(score)
+	if "outsider.csv" in old_submissions:
+		for submission in old_submissions:
+			score = evaluator(submission, score_date)
+			scores.append(score)
+	else:
+		for submission in old_submissions:
+			score = evaluator(submission, start_date)
+			scores.append(score)
 
 	baseline = scores[0]
 	scored_counties = list(baseline.keys())
@@ -230,7 +236,6 @@ if __name__ == '__main__':
 	combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
 	combined.to_csv(output_file, index=False)
 
-	score_date = '2020-05-25'
 	evaluator("combined.csv", score_date)
 
 
