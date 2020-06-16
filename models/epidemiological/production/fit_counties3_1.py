@@ -1019,130 +1019,131 @@ def test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, p
 		county_data = loader.query(us, "fips", county)
 		county_data['daily_deaths'] = loader.query(us_daily, "fips", county)["deaths"]
 		county_data['avg_deaths'] = county_data.iloc[:,6].rolling(window=3).mean()
-		county_data = county_data[2:]
+		county_data = county_data[2:-20]
+		print(county_data)
 		
-		firstnonzero = next((i for i,value in enumerate(county_data[death_metric].values) if value != 0), None)
-		final_death = (county_data["deaths"].values)[-1]
-		initial_death = (county_data["deaths"].values)[firstnonzero]
-		if firstnonzero is not None:
-			if firstnonzero > len(county_data)-7 or final_death-initial_death == 0:
-				# add to nonconvergent counties
-				nonconvergent.append(county)
-				continue
-			death_observations = (county_data['daily_deaths'].values)[firstnonzero:]
-			if list(death_observations).count(0) > len(death_observations)/2:
-				nonconvergent.append(county)
-				continue # for fit_single_county use return [county]
-			begin = firstnonzero-death_time
-			if begin >= 0:
-				county_data = county_data[begin:]
-				firstnonzero = death_time
-				county_data.reset_index(drop=True, inplace=True)
-		else:
-			continue # dont add to convonvergent counties, just leave blank and submission script will fill it in with all zeros
+	# 	firstnonzero = next((i for i,value in enumerate(county_data[death_metric].values) if value != 0), None)
+	# 	final_death = (county_data["deaths"].values)[-1]
+	# 	initial_death = (county_data["deaths"].values)[firstnonzero]
+	# 	if firstnonzero is not None:
+	# 		if firstnonzero > len(county_data)-7 or final_death-initial_death == 0:
+	# 			# add to nonconvergent counties
+	# 			nonconvergent.append(county)
+	# 			continue
+	# 		death_observations = (county_data['daily_deaths'].values)[firstnonzero:]
+	# 		if list(death_observations).count(0) > len(death_observations)/2:
+	# 			nonconvergent.append(county)
+	# 			continue # for fit_single_county use return [county]
+	# 		begin = firstnonzero-death_time
+	# 		if begin >= 0:
+	# 			county_data = county_data[begin:]
+	# 			firstnonzero = death_time
+	# 			county_data.reset_index(drop=True, inplace=True)
+	# 	else:
+	# 		continue # dont add to convonvergent counties, just leave blank and submission script will fill it in with all zeros
 
-		if adaptive and death_metric=="deaths":
-			actual_deaths = (county_data['deaths'].values)[firstnonzero:]
-			moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
-			residuals = []
-			for index in range(1, len(actual_deaths)):
-				moving_change = moving_deaths[index] - moving_deaths[index-1]
-				if moving_change > 0:
-					residue = actual_deaths[index] - moving_deaths[index]
-					residue = residue/moving_change
-					residuals.append(residue)
-			if np.std(residuals) > 0.25:
-				print("gottem")
-				death_metric = "avg_deaths"
+	# 	if adaptive and death_metric=="deaths":
+	# 		actual_deaths = (county_data['deaths'].values)[firstnonzero:]
+	# 		moving_deaths = (county_data['avg_deaths'].values)[firstnonzero:]
+	# 		residuals = []
+	# 		for index in range(1, len(actual_deaths)):
+	# 			moving_change = moving_deaths[index] - moving_deaths[index-1]
+	# 			if moving_change > 0:
+	# 				residue = actual_deaths[index] - moving_deaths[index]
+	# 				residue = residue/moving_change
+	# 				residuals.append(residue)
+	# 		if np.std(residuals) > 0.25:
+	# 			print("gottem")
+	# 			death_metric = "avg_deaths"
 
-		dates = pd.to_datetime(county_data["date"].values)
-		county_policy_regime = policy_regime
-		policy_regime_change = -2*death_time
-		if bias or policy_regime:
-			policy_date = loader.query(policies, "FIPS", county)["stay at home"]
-			if len(policy_date) == 0 or math.isnan(policy_date.values[0]):
-				county_policy_regime = False
-			else:
-				policy_date = int(policy_date.values[0])
-				policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
-				if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5) or policy_regime_change <= firstnonzero:
-					county_policy_regime = False
-					policy_regime_change = -2*death_time
+	# 	dates = pd.to_datetime(county_data["date"].values)
+	# 	county_policy_regime = policy_regime
+	# 	policy_regime_change = -2*death_time
+	# 	if bias or policy_regime:
+	# 		policy_date = loader.query(policies, "FIPS", county)["stay at home"]
+	# 		if len(policy_date) == 0 or math.isnan(policy_date.values[0]):
+	# 			county_policy_regime = False
+	# 		else:
+	# 			policy_date = int(policy_date.values[0])
+	# 			policy_regime_change = int((datetime.datetime.fromordinal(policy_date)-dates[0])/np.timedelta64(1, 'D'))
+	# 			if policy_regime_change < (death_time-5) or policy_regime_change  > len(county_data) - (death_time+5) or policy_regime_change <= firstnonzero:
+	# 				county_policy_regime = False
+	# 				policy_regime_change = -2*death_time
 
-		if county_policy_regime:
-			county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
-			predictions, death_pdf, res = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
-			if res is not None:
-				first_parameters = (res.x)[:17]
-				first_conditions = get_variables(res, county_data1, policy_regime_change)
-				first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[policy_regime_change]) 
-				N = county_data['Population'].values[0]
-				first_conditions = first_conditions/N
-				parameter_guess = list(first_parameters)+list(first_conditions)
-				parameters[county] = [parameter_guess]
+	# 	if county_policy_regime:
+	# 		county_data1 = county_data[:policy_regime_change+death_time] ## experimental. Assumes first policy_regime will carry over until death_time into future. Used to be just county_data[:policy_regime_change]
+	# 		predictions, death_pdf, res = fit(county_data1, bias=None, weight=weight, plot=False, extrapolate=0, guesses=guesses, fitQ=fitQ, getbounds=False, death_metric=death_metric)
+	# 		if res is not None:
+	# 			first_parameters = (res.x)[:17]
+	# 			first_conditions = get_variables(res, county_data1, policy_regime_change)
+	# 			first_conditions = np.append(first_conditions, (county_data1[death_metric].values)[policy_regime_change]) 
+	# 			N = county_data['Population'].values[0]
+	# 			first_conditions = first_conditions/N
+	# 			parameter_guess = list(first_parameters)+list(first_conditions)
+	# 			parameters[county] = [parameter_guess]
 
-				county_data2 = county_data[policy_regime_change:]
-				dates2 = dates[policy_regime_change:]
-				county_data2.reset_index(drop=True, inplace=True)
+	# 			county_data2 = county_data[policy_regime_change:]
+	# 			dates2 = dates[policy_regime_change:]
+	# 			county_data2.reset_index(drop=True, inplace=True)
 				
-				for i in range(death_time):
-					county_data2.at[i, death_metric] *= -1
-				extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
-				predictions2, death_pdf2, res2  = fit2(county_data1, res, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
-				predictions, death_pdf, res = predictions2, death_pdf2, res2
+	# 			for i in range(death_time):
+	# 				county_data2.at[i, death_metric] *= -1
+	# 			extrapolate = (end-dates2[-1])/np.timedelta64(1, 'D')
+	# 			predictions2, death_pdf2, res2  = fit2(county_data1, res, county_data2, weight=weight, plot=plot, extrapolate=extrapolate, guesses=parameter_guess, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+	# 			predictions, death_pdf, res = predictions2, death_pdf2, res2
 
-		elif tail_regime and type(tail_regime)==int:
-			tail = tail_regime
-			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-			county_tail_regime = len(county_data) + tail_regime
-			county_tail_regime = max(firstnonzero, county_tail_regime)
-			predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
-			if res is not None:
-				predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=plot, extrapolate=extrapolate, guesses=res.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
-				if res2 is not None:
-					predictions, death_pdf, res = predictions2, death_pdf2, res2
+	# 	elif tail_regime and type(tail_regime)==int:
+	# 		tail = tail_regime
+	# 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+	# 		county_tail_regime = len(county_data) + tail_regime
+	# 		county_tail_regime = max(firstnonzero, county_tail_regime)
+	# 		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=False, extrapolate=extrapolate, guesses=guesses, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+	# 		if res is not None:
+	# 			predictions2, death_pdf2, res2 = fit(county_data, bias=county_tail_regime, bias_value=0.01, weight=weight, plot=plot, extrapolate=extrapolate, guesses=res.x, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+	# 			if res2 is not None:
+	# 				predictions, death_pdf, res = predictions2, death_pdf2, res2
 
-		else:
-			extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
-			predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
+	# 	else:
+	# 		extrapolate = (end-dates[-1])/np.timedelta64(1, 'D')
+	# 		predictions, death_pdf, res = fit(county_data, bias=policy_regime_change+death_time, weight=weight, plot=plot, extrapolate=extrapolate, guesses=guesses, error_start=error_start, quick=quick, tail=tail, fitQ=fitQ, getbounds=getbounds, death_metric=death_metric)
 
-		if res is None:
-			# add to nonconvergent counties
-			nonconvergent.append(county)
-			continue
-		print(list(res.x))
+	# 	if res is None:
+	# 		# add to nonconvergent counties
+	# 		nonconvergent.append(county)
+	# 		continue
+	# 	print(list(res.x))
 
-		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
-		if death_cdf is None:
-			if policy_regime:
-				death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
-			else:
-				death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
-			death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
+	# 	death_cdf = get_death_cdf(death_pdf, extrapolate, switch=quick)
+	# 	if death_cdf is None:
+	# 		if policy_regime:
+	# 			death_pdf = get_fit_errors2(res, guesses[:17], county_data1, county_data2, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
+	# 		else:
+	# 			death_pdf = get_fit_errors(res, guesses[:17], county_data, extrapolate=extrapolate, error_start=error_start, quick=True, tail=tail, death_metric=death_metric)
+	# 		death_cdf = get_death_cdf(death_pdf, extrapolate, switch=True)
 		
 
-		death_cdf = np.transpose(death_cdf)
-		counties_dates.append(dates)
-		counties_death_errors.append(death_cdf)
-		counties_fips.append(county)
-		if county in parameters.keys():
-			parameters[county].append(res.x)
-		else:
-			parameters[county] = [res.x]
+	# 	death_cdf = np.transpose(death_cdf)
+	# 	counties_dates.append(dates)
+	# 	counties_death_errors.append(death_cdf)
+	# 	counties_fips.append(county)
+	# 	if county in parameters.keys():
+	# 		parameters[county].append(res.x)
+	# 	else:
+	# 		parameters[county] = [res.x]
 
-	if len(nonconvergent) > 0:
-		print(f"nonconvergent: {nonconvergent}")
-		counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, error_start=error_start) 
-		counties_dates = counties_dates + counties_dates_non
-		for death_cdf in counties_death_errors_non:
-			counties_death_errors.append(death_cdf)
-		# county_death_errors = counties_death_errors + counties_death_errors2
-		counties_fips = counties_fips + counties_fips_non
+	# if len(nonconvergent) > 0:
+	# 	print(f"nonconvergent: {nonconvergent}")
+	# 	counties_dates_non, counties_death_errors_non, counties_fips_non = fill_nonconvergent(nonconvergent, us_daily, end, error_start=error_start) 
+	# 	counties_dates = counties_dates + counties_dates_non
+	# 	for death_cdf in counties_death_errors_non:
+	# 		counties_death_errors.append(death_cdf)
+	# 	# county_death_errors = counties_death_errors + counties_death_errors2
+	# 	counties_fips = counties_fips + counties_fips_non
 
-	output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
-	"nonconvergent": nonconvergent, "parameters": parameters}
+	# output_dict = {"counties_dates": np.array(counties_dates), "counties_death_errors": np.array(counties_death_errors), "counties_fips": np.array(counties_fips), \
+	# "nonconvergent": nonconvergent, "parameters": parameters}
 
-	return output_dict
+	# return output_dict
 
 
 def fit_single_county(input_dict):
@@ -1541,7 +1542,7 @@ if __name__ == '__main__':
 
 	# guesses = None
 
-	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
+	test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")
 
 	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=True, adaptive=True, death_metric="avg_deaths")
 	# test(end, bias=False, policy_regime=False, tail_regime=False, weight=True, plot=True, guesses=guesses, error_start=None, quick=True, tail=False, fitQ=False, adaptive=True, death_metric="deaths")

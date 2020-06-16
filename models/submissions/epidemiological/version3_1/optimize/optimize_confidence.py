@@ -274,133 +274,133 @@ if __name__ == '__main__':
 	# do the code for combine_preidctions first
 	# then do the code comparing different weight parameters 
 	# Make this into a batch script to automate both 
-	start_date = '2020-05-12'
-	latest_date = '2020-05-25'
-	submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_2.csv']
-	guesses1 = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
-	9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
-	4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
-	3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
-	guesses2 = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
-	0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
-	0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
-	4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
-	0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
-	submissions_args = {0: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
-	2: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
-	4: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 5: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
-	6: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 7: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
-	# submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
-	# new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
+	# start_date = '2020-05-12'
+	# latest_date = '2020-05-25'
+	# submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission1_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission2_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission3_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission4_2.csv']
+	# guesses1 = [1.41578513e-01, 1.61248129e-01, 2.48362028e-01, 3.42978127e-01, 5.79023652e-01, 4.64392758e-02, \
+	# 9.86745420e-06, 4.83700388e-02, 4.85290835e-01, 3.72688900e-02, 4.92398129e-04, 5.20319673e-02, \
+	# 4.16822944e-02, 2.93718207e-02, 2.37765976e-01, 6.38313283e-04, 1.00539865e-04, 7.86113867e-01, \
+	# 3.26287443e-01, 8.18317732e-06, 5.43511913e-10, 1.30387168e-04, 3.58953133e-03, 1.57388153e-05]
+	# guesses2 = [0.02617736443427591, 0.17255447311461145, 0.15215935309382572, 0.21639011562137145, 0.6814820048990581, \
+	# 0.20502517812934218, 3.3437178707695294e-05, 0.02698465330273812, 0.6410113879774412, 0.0003028925057859545, \
+	# 0.3134893862413215, 0.06970602089626211, 0.42179760229195923, 0.009272596143914662, 0.258962882347026, \
+	# 4.811125145762032e-09, 0.003859238158274466, 0.7716354446714161, 0.23179542329093872, 0.00017236677811295644, \
+	# 0.005038783003615411, 2.683729877737938e-05, 5.3017766786399385e-11, 0.000759771263]
+	# submissions_args = {0: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False}, 1: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"deaths", "adaptive":False},\
+	# 2: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False}, 3: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":False, "death_metric":"avg_deaths", "adaptive":False},\
+	# 4: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True}, 5: {"bias":True, "weight":True, "policy_regime":False, "tail_regime":True, "death_metric":"deaths", "adaptive":True},\
+	# 6: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}, 7: {"bias":True, "weight":True, "policy_regime":True, "tail_regime":False, "death_metric":"deaths", "adaptive":True}}
+	# # submissions = [f"{homedir}"+ '/sample_submission.csv', '../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv']
+	# # new_submissions = ['../epidemiological/version3_1/submission3_1_0.csv', '../epidemiological/version3_1/submission3_1_1.csv', '../epidemiological/version3_1/submission3_1_2.csv', f'{homedir}/sample_submission.csv']
 	
-	parameter_files = [f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_2.csv',\
-	f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_2.csv']
+	# parameter_files = [f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters1_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters2_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters3_2.csv',\
+	# f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/parameters/parameters4_2.csv']
 
-	scores = []
-	for submission in submissions:
-		score = evaluator(submission, start_date)
-		scores.append(score)
+	# scores = []
+	# for submission in submissions:
+	# 	score = evaluator(submission, start_date)
+	# 	scores.append(score)
 
-	submission_parameters = []
-	for parameter_file in parameter_files:
-		input_path = parameter_file
-		fopen = open(input_path,'r')
-		data = fopen.read()
-		json_decoded = data.replace("'", "\"")
-		params_dict = json.loads(json_decoded)
-		submission_parameters.append(params_dict)
+	# submission_parameters = []
+	# for parameter_file in parameter_files:
+	# 	input_path = parameter_file
+	# 	fopen = open(input_path,'r')
+	# 	data = fopen.read()
+	# 	json_decoded = data.replace("'", "\"")
+	# 	params_dict = json.loads(json_decoded)
+	# 	submission_parameters.append(params_dict)
 
-	baseline = scores[0]
-	combined_args = {}
-	for county in list(baseline.keys()):
-		best = baseline[county]
-		best_index = 0
-		for index, score in enumerate(scores):
-			if score[county] < best:
-				best = score[county]
-				best_index = index
-		best_parameters = submission_parameters[best_index]
-		if county in list(best_parameters.keys()):
-			county_args = dict(submissions_args[best_index])
-			params = best_parameters[county][-1]
-			county_args["params"] = params
-		else:
-			county_args = None
-		combined_args[county] = county_args
+	# baseline = scores[0]
+	# combined_args = {}
+	# for county in list(baseline.keys()):
+	# 	best = baseline[county]
+	# 	best_index = 0
+	# 	for index, score in enumerate(scores):
+	# 		if score[county] < best:
+	# 			best = score[county]
+	# 			best_index = index
+	# 	best_parameters = submission_parameters[best_index]
+	# 	if county in list(best_parameters.keys()):
+	# 		county_args = dict(submissions_args[best_index])
+	# 		params = best_parameters[county][-1]
+	# 		county_args["params"] = params
+	# 	else:
+	# 		county_args = None
+	# 	combined_args[county] = county_args
 
-	# # Now we have the best args for each county
+	# # # Now we have the best args for each county
 
-	# generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
-	generate_confidence(combined_args, quick=True, error_start=-14, tail=False, fix_nonconvergent=True, sub_id="1")
-	generate_confidence(combined_args, quick=True, error_start=-14, tail=-14, fix_nonconvergent=False, sub_id="2")
-
-
-	new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
-
-	scores = []
-	for submission in new_submissions:
-		score = evaluator(submission, start_date)
-		scores.append(score)
-
-	baseline = scores[0]
-	scored_counties = list(baseline.keys())
-	optimal_submission = {}
-	for county in scored_counties:
-		best = baseline[county]
-		best_index = 0
-		for index, score in enumerate(scores):
-			if score[county] < best:
-				best = score[county]
-				best_index = index
-		print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
-		optimal_submission[county] = best_index
+	# # generate the new_submissions (confidence) files using the function defined above, save to the new submissions file paths
+	# generate_confidence(combined_args, quick=True, error_start=-14, tail=False, fix_nonconvergent=True, sub_id="1")
+	# generate_confidence(combined_args, quick=True, error_start=-14, tail=-14, fix_nonconvergent=False, sub_id="2")
 
 
-	#### 
-	baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission_baseline.csv' #this will have to have errors, not just predictions
-	new_submissions.append(baseline_submission)
-	submission_files = []
-	for submission in new_submissions:
-		submission_file = pd.read_csv(submission, index_col=False)
-		submission_files.append(submission_file)
+	# new_submissions = [f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission1.csv', f'{homedir}/models/submissions/epidemiological/version3_1/confidences/submission2.csv', f'{homedir}/sample_submission.csv']
 
-	baseline_file = submission_files[-1]
-	ultimate_submission = []
-	total = len(baseline_file)
-	for index, row in baseline_file.iterrows():
-		print(f"{index+1} / {total}")
-		county = row["id"].split('-')[-1]
-		date = row["id"][0:10]
-		day = date.split('-')[-1]
-		month = date.split('-')[-2]
-		if county not in scored_counties or (int(day) <= int(latest_date.split('-')[-1]) and int(month) <= int(latest_date.split('-')[-2])):
-			optimal_file_index = -1
-			ultimate_submission.append(list(row.values))
-			continue
-		optimal_file_index = optimal_submission[county]
-		optimal_file = submission_files[optimal_file_index]
-		ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
+	# scores = []
+	# for submission in new_submissions:
+	# 	score = evaluator(submission, start_date)
+	# 	scores.append(score)
+
+	# baseline = scores[0]
+	# scored_counties = list(baseline.keys())
+	# optimal_submission = {}
+	# for county in scored_counties:
+	# 	best = baseline[county]
+	# 	best_index = 0
+	# 	for index, score in enumerate(scores):
+	# 		if score[county] < best:
+	# 			best = score[county]
+	# 			best_index = index
+	# 	print(f"{county} submission {best_index} scores {best} over {baseline[county]}")
+	# 	optimal_submission[county] = best_index
+
+
+	# #### 
+	# baseline_submission = f'{homedir}/models/submissions/epidemiological/version3_1/fits/submission_baseline.csv' #this will have to have errors, not just predictions
+	# new_submissions.append(baseline_submission)
+	# submission_files = []
+	# for submission in new_submissions:
+	# 	submission_file = pd.read_csv(submission, index_col=False)
+	# 	submission_files.append(submission_file)
+
+	# baseline_file = submission_files[-1]
+	# ultimate_submission = []
+	# total = len(baseline_file)
+	# for index, row in baseline_file.iterrows():
+	# 	print(f"{index+1} / {total}")
+	# 	county = row["id"].split('-')[-1]
+	# 	date = row["id"][0:10]
+	# 	day = date.split('-')[-1]
+	# 	month = date.split('-')[-2]
+	# 	if county not in scored_counties or (int(day) <= int(latest_date.split('-')[-1]) and int(month) <= int(latest_date.split('-')[-2])):
+	# 		optimal_file_index = -1
+	# 		ultimate_submission.append(list(row.values))
+	# 		continue
+	# 	optimal_file_index = optimal_submission[county]
+	# 	optimal_file = submission_files[optimal_file_index]
+	# 	ultimate_submission.append(list(optimal_file.iloc[[index]].values[0]))
 		
 
-	output_file = f'{homedir}/models/submissions/epidemiological/version3_1/optimize/optimize_confidence.csv'
-	header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
-	with open(output_file, 'w') as submission_file:
-		writer = csv.writer(submission_file, delimiter=',')
-		writer.writerow(header)
-		writer.writerows(ultimate_submission)
+	# output_file = f'{homedir}/models/submissions/epidemiological/version3_1/optimize/optimize_confidence.csv'
+	# header = ["id", "10", "20", "30", "40", "50", "60", "70", "80", "90"]
+	# with open(output_file, 'w') as submission_file:
+	# 	writer = csv.writer(submission_file, delimiter=',')
+	# 	writer.writerow(header)
+	# 	writer.writerows(ultimate_submission)
 
-	combined = pd.read_csv(output_file, index_col=False)
-	combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
-	combined.to_csv(output_file, index=False)
+	# combined = pd.read_csv(output_file, index_col=False)
+	# combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]] = combined[["10", "20", "30", "40", "50", "60", "70", "80", "90"]].apply(pd.to_numeric)
+	# combined.to_csv(output_file, index=False)
 
 
 	score_date = '2020-05-25'
-	evaluator("optimize_confidence.csv", score_date)
+	evaluator("../../../checkpoint_final/final_test.csv", score_date)
 
 
 
